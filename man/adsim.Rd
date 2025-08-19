@@ -2,7 +2,7 @@
 % Please edit documentation in R/adsim.R
 \name{adsim}
 \alias{adsim}
-\title{adsimR}
+\title{adsim}
 \usage{
 adsim(ngens, k, l, admix, m1, m2, ne, p1, p2, nsims)
 }
