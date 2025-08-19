@@ -1,4 +1,4 @@
-#' adsimR
+#' adsim
 #'
 #' This function simulates evolution of an allele through genetic drift in an
 #' admixed population. The user must specify the starting allele frequency in
