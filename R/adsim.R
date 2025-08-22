@@ -18,7 +18,10 @@
 #' @param m1 Migration rate from the first parent population.
 #' @param m2 Migration rate from the second parent population.
 #' @param nsims Number of simulations to perform.
-#' @return A data frame with the final allele frequency of each simulation.
+#' @return A data frame containing three columns:
+#' - Sim: a numeric index containing the simulation run
+#' - p0: a numeric containing the starting allele following the first generation of admixture.
+#' - pF: a numeric containing the final allele frequency of each simulation.
 #' @export
 
 adsim <- function(

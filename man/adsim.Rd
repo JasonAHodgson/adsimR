@@ -28,7 +28,12 @@ adsim(ngens, k, l, admix, m1, m2, ne, p1, p2, nsims)
 \item{nsims}{Number of simulations to perform.}
 }
 \value{
-A data frame with the final allele frequency of each simulation.
+A data frame containing three columns:
+\itemize{
+\item Sim: a numeric index containing the simulation run
+\item p0: a numeric containing the starting allele following the first generation of admixture.
+\item pF: a numeric containing the final allele frequency of each simulation.
+}
 }
 \description{
 This function simulates evolution of an allele through genetic drift in an
