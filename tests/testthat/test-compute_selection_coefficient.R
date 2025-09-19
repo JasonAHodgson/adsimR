@@ -11,7 +11,7 @@ test_that("test valid input", {
 test_that("test valid input", {
   #create basic dataframe
   df <- data.frame(g = c(1, 2, 3), q = c(0.1, 0.2, 0.3), qx = c(0.15, 0.25, 0.35))
-  #save as csv file
+  #create a csv path
   input_file <- paste0(tempfile("test_input.csv"))
   write.table(df, input_file, col.names = c("g", "q", "qx"), row.names = FALSE, quote = FALSE)
   results <- compute_selection_coefficients(infile = input_file, outfile = paste0(tempdir(), "/output.txt"))
