@@ -1,6 +1,6 @@
 #' Compute selection coefficients from allele frequency scenarios
 #'
-#' @param infile Path to input file (tab-delimited, with columns: g, q, qx).
+#' @param infile Path to input file (columns: g, q, qx).
 #' @param outfile Path to save output table (with added column s).
 #' @return Data frame with selection coefficients.
 #' @examples
@@ -8,9 +8,14 @@
 #' outfile = paste0(tempdir(), "/output.txt"))
 
 compute_selection_coefficients <- function(infile, outfile) {
-  if (!file.exists(infile)) stop(paste("ERROR: Cannot find", infile))
-
-  dat <- read.table(infile, header = TRUE)
+  if(is.data.frame(infile)) {
+    dat <- infile
+  } else if (is.character(infile)) {
+    if(!file.exists(infile)) stop(paste("ERROR: Cannot find", infile))
+    dat <- read.table(infile, header = TRUE)
+  } else {
+    stop("ERROR: 'infile' must be either a data frame or a file path (character string)")
+  }
 
   if (!all(c("g", "q", "qx") %in% colnames(dat))) {
     stop("Input file must contain columns: g, q, qx")
