@@ -102,7 +102,7 @@ adsim <- function(
         if (g_count == ngens) {
           results <- rbind(results, data.frame(Sim = sim, p0 = A_initial, pF = old_A, ngens = ngens, k = k,
                                                l = l, admix = admix, m1 = m1, m2 = m2, ne = ne, p1 = p1,
-                                               p2 = p2, stringFactors = FALSE) )
+                                               p2 = p2, stringsAsFactors = FALSE) )
         }
       }
 
