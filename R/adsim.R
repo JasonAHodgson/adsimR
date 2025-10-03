@@ -54,51 +54,60 @@ adsim <- function(
     sum(runif(2 * n) <= p)
   }
 
-  results <- data.frame(Sim = integer(), p0 = numeric(), pF = numeric(), stringsAsFactors = FALSE)
+  results <- data.frame(Sim = integer(), p0 = numeric(), pF = numeric(),
+                        pF = numeric(), ngens = integer(),
+                        k = numeric(), l = integer(),
+                        admix = numeric(), m1 = numeric(),
+                        m2 = numeric(), ne = integer(),
+                        p1 = numeric(), p2 = numeric(),
+                        stringsAsFactors = FALSE)
 
-  for (sim in 1:nsims) {
-    raw_p1 <- admix * ne
-    n_p1 <- if (raw_p1 %% 1 != 0) {
-      int <- floor(raw_p1)
-      fp <- raw_p1 - int
-      if (runif(1) > fp) int else int + 1
-    } else raw_p1
-    n_p2 <- ne - n_p1
+    for (sim in 1:nsims) {
+      raw_p1 <- admix * ne
+      n_p1 <- if (raw_p1 %% 1 != 0) {
+        int <- floor(raw_p1)
+        fp <- raw_p1 - int
+        if (runif(1) > fp) int else int + 1
+      } else raw_p1
+      n_p2 <- ne - n_p1
 
-    P1_count <- choose_allele(n_p1, p1)
-    P2_count <- choose_allele(n_p2, p2)
-    A_initial <- (P1_count + P2_count) / (2 * ne)
+      P1_count <- choose_allele(n_p1, p1)
+      P2_count <- choose_allele(n_p2, p2)
+      A_initial <- (P1_count + P2_count) / (2 * ne)
 
-    g_count <- 1
-    old_n <- ne
-    old_A <- A_initial
+      g_count <- 1
+      old_n <- ne
+      old_A <- A_initial
 
-    while (g_count < ngens) {
-      new_n <- if (g_count > l) floor(old_n * k) else ne
-      new_n <- min(new_n, max_n)
+      while (g_count < ngens) {
+        new_n <- if (g_count > l) floor(old_n * k) else ne
+        new_n <- min(new_n, max_n)
 
-      A_count <- choose_allele(new_n, old_A)
+        A_count <- choose_allele(new_n, old_A)
 
-      if (m1 > 0) {
-        A_count <- A_count + choose_allele(m1, p1)
-        new_n <- new_n + m1
+        if (m1 > 0) {
+          A_count <- A_count + choose_allele(m1, p1)
+          new_n <- new_n + m1
+        }
+
+        if (m2 > 0) {
+          A_count <- A_count + choose_allele(m2, p2)
+          new_n <- new_n + m2
+        }
+
+        old_A <- A_count / (2 * new_n)
+        old_n <- new_n
+        g_count <- g_count + 1
+
+        if (g_count == ngens) {
+          results <- rbind(results, data.frame(Sim = sim, p0 = A_initial, pF = old_A, ngens = ngens, k = k,
+                                               l = l, admix = admix, m1 = m1, m2 = m2, ne = ne, p1 = p1,
+                                               p2 = p2, stringFactors = FALSE) )
+        }
       }
 
-      if (m2 > 0) {
-        A_count <- A_count + choose_allele(m2, p2)
-        new_n <- new_n + m2
-      }
-
-      old_A <- A_count / (2 * new_n)
-      old_n <- new_n
-      g_count <- g_count + 1
-
-      if (g_count == ngens) {
-        results <- rbind(results, data.frame(Sim = sim, p0 = A_initial, pF = old_A))
-      }
-    }
   }
+
 
   return(results)
 }
-
