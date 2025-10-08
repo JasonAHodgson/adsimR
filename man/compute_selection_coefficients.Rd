@@ -4,12 +4,15 @@
 \alias{compute_selection_coefficients}
 \title{Compute selection coefficients from allele frequency scenarios}
 \usage{
-compute_selection_coefficients(infile, outfile)
+compute_selection_coefficients(infile, outfile, recessive = FALSE)
 }
 \arguments{
 \item{infile}{Path to input file (columns: g, q, qx).}
 
 \item{outfile}{Path to save output table (with added column s).}
+
+\item{recessive}{Logical, if TRUE assumes recessive model, if FALSE assumes
+dominant model. Default is FALSE.}
 }
 \value{
 Data frame with selection coefficients.
