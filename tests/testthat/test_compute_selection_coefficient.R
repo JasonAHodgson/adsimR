@@ -33,3 +33,31 @@ test_that("dominant is less than recesive",{
   results_dominant <- compute_selection_coefficients(infile = path, outfile = paste0(tempdir(), "/output.txt"), recessive = FALSE)
   expect_equal(results_recessive$s > results_dominant$s, rep(TRUE, 15))
 })
+
+test_that("adsim returns the right number of rows and >= 12 columns", {
+  # parameters
+  ngens <- c(20, 30)
+  k     <- c(1, 1.05)
+  l     <- 1
+  admix <- c(0.5, 0.6)
+  m1    <- 0
+  m2    <- 0
+  ne    <- c(100, 500)
+  p1    <- 1
+  p2    <- 0
+  nsims <- 1000
+
+  out <- adsim(ngens, k, l, admix, m1, m2, ne, p1, p2, nsims)
+
+  # expected rows = sum(nsims across all parameter combinations (works for scalar or vector nsims)
+  grid <- expand.grid(
+    ngens = ngens, k = k, l = l, admix = admix,
+    m1 = m1, m2 = m2, ne = ne, p1 = p1, p2 = p2, nsims = nsims
+  )
+  expected_rows <- sum(grid$nsims)
+
+  expect_equal(nrow(out), expected_rows)
+  expect_true(ncol(out) >= 12L)
+  expect_true(all(c("Sim","p0","pF",
+                    "ngens","k","l","admix","m1","m2","ne","p1","p2") %in% names(out)))
+})
