@@ -6,8 +6,10 @@
 #' effective population size, the admixture proportion, the population growth
 #' parameters, the migration rate from both parent populations, and the number
 #' of simulations to perform. The function returns a data frame containing the
-#' final allele frequency of each simulation.
+#' final allele frequency of each simulation.The function accepts lists as input
+#' as well.
 #'
+#' @param adsim_simulator Function that performs a single simulation run.
 #' @param ngens Number of generations to simulate.
 #' @param k population growth parameter.
 #' @param l number of generations prior to population growth.
@@ -24,81 +26,45 @@
 #' - pF: a numeric containing the final allele frequency of each simulation.
 #' @export
 
-adsim <- function(
-    ngens,      # generations since admixture
-    k,          # population growth factor
-    l,          # generations before growth
-    admix,      # admixture proportion
-    m1,         # migration rate from population 1
-    m2,         # migration rate from population 2
-    ne,         # effective population size at generation 0
-    p1,         # allele frequency in population 1
-    p2,         # allele frequency in population 2
-    nsims       # number of simulations
-) {
-  max_n <- 5000
+adsim <- function(ngens, k, l, admix,
+                      m1, m2, ne, p1, p2, nsims)
+  {
+  # Input validation for vectors
+  stopifnot(all(is.numeric(ngens), ngens > 0))
+  stopifnot(all(is.numeric(k), k > 0))
+  stopifnot(all(is.numeric(l), l >= 0, l < ngens))
+  stopifnot(all(is.numeric(admix), admix >= 0, admix <= 1))
+  stopifnot(all(is.numeric(m1), m1 >= 0))
+  stopifnot(all(is.numeric(m2), m2 >= 0))
+  stopifnot(all(is.numeric(ne), ne > 0))
+  stopifnot(all(is.numeric(p1), p1 >= 0, p1 <= 1))
+  stopifnot(all(is.numeric(p2), p2 >= 0, p2 <= 1))
+  stopifnot(all(is.numeric(nsims), nsims > 0))
 
-  # Input validation
-  stopifnot(is.numeric(ngens), ngens > 0)
-  stopifnot(is.numeric(k), k > 0)
-  stopifnot(is.numeric(l), l >= 0, l < ngens)
-  stopifnot(is.numeric(admix), admix >= 0, admix <= 1)
-  stopifnot(is.numeric(m1), m1 >= 0)
-  stopifnot(is.numeric(m2), m2 >= 0)
-  stopifnot(is.numeric(ne), ne > 0)
-  stopifnot(is.numeric(p1), p1 >= 0, p1 <= 1)
-  stopifnot(is.numeric(p2), p2 >= 0, p2 <= 1)
-  stopifnot(is.numeric(nsims), nsims > 0)
+  # Create parameter combinations
+  param_combos <- expand.grid(
+    ngens = ngens, k = k, l = l, admix = admix,
+    m1 = m1, m2 = m2, ne = ne, p1 = p1, p2 = p2, nsims = nsims
+  )
 
-  choose_allele <- function(n, p) {
-    sum(runif(2 * n) <= p)
+  # Sanity check - compute the number of combinations of parameters
+  n_combinations <- length(ngens) * length(k) * length(l) * length(admix) *
+    length(m1) * length(m2) * length(ne) * length(p1) * length(p2) * length(nsims)
+  total_sims <- n_combinations * nsims
+
+
+  # Function to run mapply and combine results
+  combine_sims <- function(ngens, k, l, admix, m1, m2, ne, p1, p2, nsims) {
+    results_list <- mapply(adsim_simulator, ngens, k, l, admix, m1, m2, ne, p1, p2, nsims, SIMPLIFY = FALSE)
+    results <- do.call(rbind, results_list)
+    return(results)
   }
 
-  results <- data.frame(Sim = integer(), p0 = numeric(), pF = numeric(), stringsAsFactors = FALSE)
-
-  for (sim in 1:nsims) {
-    raw_p1 <- admix * ne
-    n_p1 <- if (raw_p1 %% 1 != 0) {
-      int <- floor(raw_p1)
-      fp <- raw_p1 - int
-      if (runif(1) > fp) int else int + 1
-    } else raw_p1
-    n_p2 <- ne - n_p1
-
-    P1_count <- choose_allele(n_p1, p1)
-    P2_count <- choose_allele(n_p2, p2)
-    A_initial <- (P1_count + P2_count) / (2 * ne)
-
-    g_count <- 1
-    old_n <- ne
-    old_A <- A_initial
-
-    while (g_count < ngens) {
-      new_n <- if (g_count > l) floor(old_n * k) else ne
-      new_n <- min(new_n, max_n)
-
-      A_count <- choose_allele(new_n, old_A)
-
-      if (m1 > 0) {
-        A_count <- A_count + choose_allele(m1, p1)
-        new_n <- new_n + m1
-      }
-
-      if (m2 > 0) {
-        A_count <- A_count + choose_allele(m2, p2)
-        new_n <- new_n + m2
-      }
-
-      old_A <- A_count / (2 * new_n)
-      old_n <- new_n
-      g_count <- g_count + 1
-
-      if (g_count == ngens) {
-        results <- rbind(results, data.frame(Sim = sim, p0 = A_initial, pF = old_A))
-      }
-    }
-  }
-
-  return(results)
+  # Run simulations and combine results
+  return(combine_sims(
+    param_combos$ngens, param_combos$k, param_combos$l, param_combos$admix,
+    param_combos$m1, param_combos$m2, param_combos$ne, param_combos$p1,
+    param_combos$p2, param_combos$nsims
+  ))
 }
 
