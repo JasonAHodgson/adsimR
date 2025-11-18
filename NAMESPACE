@@ -2,3 +2,4 @@
 
 export(adsim)
 export(adsim_simulator)
+export(plot_func)

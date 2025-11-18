@@ -13,7 +13,8 @@ adsim(ngens, k, l, admix, m1, m2, ne, p1, p2, nsims)
 
 \item{l}{number of generations prior to population growth.}
 
-\item{admix}{Proportion of ancestry contributed by the first parent population.}
+\item{admix}{Proportion of ancestry contributed by the first parent
+population.}
 
 \item{m1}{Migration rate from the first parent population.}
 
@@ -33,7 +34,8 @@ adsim(ngens, k, l, admix, m1, m2, ne, p1, p2, nsims)
 A data frame containing three columns:
 \itemize{
 \item Sim: a numeric index containing the simulation run
-\item p0: a numeric containing the starting allele following the first generation of admixture.
+\item p0: a numeric containing the starting allele following the first generation
+of admixture.
 \item pF: a numeric containing the final allele frequency of each simulation.
 }
 }
