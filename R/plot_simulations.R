@@ -1,4 +1,4 @@
-#' plot_func
+#' plot_simulations
 #'
 #' This function creates an autoplot of adsim output
 #'
@@ -19,7 +19,7 @@
 #'
 #' plot_func(test)
 
-plot_func <- function(adsim_df){
+plot_simulations <- function(adsim_df){
   overview_adsim <- function(adsim_df){
     sum_adsim_df <- adsim_df %>%
       dplyr::group_by(ngens, k, l, admix, m1, m2, ne, p1, p2) %>%
