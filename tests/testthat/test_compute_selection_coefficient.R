@@ -20,16 +20,17 @@ test_that("test valid csv input", {
 })
 
 test_that("results are compatible with perl script", {
-  path <- system.file("/perl_base_code/Selection_scenarios.txt", package = "adsimR")
+  path <- system.file("extdata","Selection_scenarios.txt", package = "adsimR")
   results_adsimR <- compute_selection_coefficients(infile = path, recessive = TRUE, outfile = paste0(tempdir(), "/output.txt"))
-  path2 <- system.file("/perl_base_code/Selection_scenarios_coefficients.txt", package = "adsimR")
+  path2 <- system.file("extdata","Selection_scenarios_coefficients.txt", package = "adsimR")
   results_perl <- read.table(path2, header = TRUE)
   expect_equal(results_adsimR, results_perl)
 })
 
 test_that("dominant is less than recesive",{
-  path <- system.file("/perl_base_code/Selection_scenarios.txt", package = "adsimR")
+  path <- system.file("extdata","Selection_scenarios.txt", package = "adsimR")
   results_recessive <- compute_selection_coefficients(infile = path, outfile = paste0(tempdir(), "/output.txt"), recessive = TRUE)
   results_dominant <- compute_selection_coefficients(infile = path, outfile = paste0(tempdir(), "/output.txt"), recessive = FALSE)
   expect_equal(results_recessive$s > results_dominant$s, rep(TRUE, 15))
 })
+

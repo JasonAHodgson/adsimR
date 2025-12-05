@@ -5,8 +5,9 @@
 #' @param recessive Logical, if TRUE assumes recessive model, if FALSE assumes
 #'   dominant model. Default is FALSE.
 #' @return Data frame with selection coefficients.
+#' @export
 #' @examples
-#' result <- compute_selection_coefficients(infile = system.file("perl_base_code/Selection_scenarios.txt", package = "adsimR"),
+#' result <- compute_selection_coefficients(infile = system.file("extdata","Selection_scenarios.txt", package = "adsimR"),
 #' outfile = paste0(tempdir(), "/output.txt"))
 
 compute_selection_coefficients <- function(infile, outfile, recessive = FALSE) {

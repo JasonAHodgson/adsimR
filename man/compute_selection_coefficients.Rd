@@ -21,6 +21,6 @@ Data frame with selection coefficients.
 Compute selection coefficients from allele frequency scenarios
 }
 \examples{
-result <- compute_selection_coefficients(infile = system.file("perl_base_code/Selection_scenarios.txt", package = "adsimR"),
+result <- compute_selection_coefficients(infile = system.file("extdata","Selection_scenarios.txt", package = "adsimR"),
 outfile = paste0(tempdir(), "/output.txt"))
 }

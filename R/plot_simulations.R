@@ -17,32 +17,13 @@
 #' m1 = 0.01, m2 = 0.01, ne = 100, p1 = 0.5,
 #' p2 = 0.9, nsims = 10)
 #'
-#' plot_func(test)
+#' plot_simulations(test)
 
 plot_simulations <- function(adsim_df){
-  overview_adsim <- function(adsim_df){
-    sum_adsim_df <- adsim_df %>%
-      dplyr::group_by(ngens, k, l, admix, m1, m2, ne, p1, p2) %>%
-      dplyr::summarise(
-        mean_pF = mean(pF),
-        sd_pF   = stats::sd(pF),
-        # calculate percentiles
-        Q1_pF = stats::quantile(pF, 0.05),
-        Q2_pF = stats::quantile(pF, 0.10),
-        Q3_pF = stats::quantile(pF, 0.25),
-        Q4_pF = stats::quantile(pF, 0.75),
-        Q5_pF = stats::quantile(pF, 0.90),
-        Q6_pF = stats::quantile(pF, 0.95),
-        .groups = "drop"
-      )
-    # Create vector P1..PN where N = number of rows
-    sum_adsim_df$param_group <- paste0("P", seq_len(nrow(sum_adsim_df)))
-    return(sum_adsim_df)
-  }
 
   # create a lollipop plot that shows mean and sd of final allele frequencies
   plot_lollipop <- function(adsim_df){
-    plot_data <- overview_adsim(adsim_df)
+    plot_data <- adsimR::sim_overview(adsim_df)
 
     P1 <- ggplot2::ggplot(plot_data, ggplot2::aes(x = c(mean_pF, sd_pF), y = factor(param_group))) +
       ggplot2::geom_segment(ggplot2::aes(x = Q1_pF, xend = Q6_pF, y = factor(param_group), yend = factor(param_group), color = "95%"), linewidth = 13) +
@@ -62,9 +43,9 @@ plot_simulations <- function(adsim_df){
   }
   plot4grob <- plot_lollipop(adsim_df)
 
-  # table of overview_adsim output saved as grob
+  # table of sim_overview output saved as grob
   p_table <- function(adsim_df){
-    table_data <- overview_adsim(adsim_df) %>%
+    table_data <- sim_overview(adsim_df) %>%
       dplyr::select(-Q1_pF, -Q2_pF, -Q3_pF, -Q4_pF, -Q5_pF, -Q6_pF)
     theme <- gridExtra::ttheme_default(
       core = list(
@@ -81,6 +62,5 @@ plot_simulations <- function(adsim_df){
   table4grob <- p_table(adsim_df)
 
   # combine plot and table into single grob
-  return(gridExtra::grid.arrange(plot4grob, table4grob, ncol = 1))
+  return(gridExtra::grid.arrange(grobs = list(plot4grob, table4grob), ncol = 1, width = c(2,1)))
 }
-

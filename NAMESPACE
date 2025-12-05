@@ -2,4 +2,6 @@
 
 export(adsim)
 export(adsim_simulator)
-export(plot_func)
+export(compute_selection_coefficients)
+export(plot_simulations)
+export(sim_overview)
