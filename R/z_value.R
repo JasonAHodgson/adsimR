@@ -13,15 +13,15 @@
 #' z_value(test)
 z_value <- function(df){
   standard_score <- sim_overview(df) %>%
-    group_by(.data$p1,.data$p2,.data$admix) %>%
-    transmute(
+    dplyr::group_by(.data$p1, .data$p2, .data$admix) %>%
+    dplyr::transmute(
       # sd_pF = sd_pF,
       # p1 = p1,
       # p2 = p2,
       obs_freq = .data$mean_pF,
-      #.data explicitly asks R to look for the variable in the current data frame, should i use that?
-      exp_freq = (.data$admix * p1) + ((1-.data$admix)* p2),
-      z = (obs_freq - exp_freq)/.data$sd_pF
+      #.data explicitly asks R to look for the variable in the current data frame
+      exp_freq = (.data$admix * .data$p1) + ((1-.data$admix)* .data$p2),
+      z = (.data$obs_freq - .data$exp_freq)/.data$sd_pF
     )
   return(standard_score)
   }

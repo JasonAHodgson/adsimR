@@ -51,7 +51,7 @@ adsim_simulator <- function(
   stopifnot(is.numeric(nsims), nsims > 0)
 
   choose_allele <- function(n, p) {
-    sum(runif(2 * n) <= p)
+    sum(stats::runif(2 * n) <= p)
   }
 
   results <- data.frame(Sim = integer(), p0 = numeric(), pF = numeric(),
@@ -67,7 +67,7 @@ adsim_simulator <- function(
       n_p1 <- if (raw_p1 %% 1 != 0) {
         int <- floor(raw_p1)
         fp <- raw_p1 - int
-        if (runif(1) > fp) int else int + 1
+        if (stats::runif(1) > fp) int else int + 1
       } else raw_p1
       n_p2 <- ne - n_p1
 

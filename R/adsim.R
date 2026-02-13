@@ -9,7 +9,6 @@
 #' final allele frequency of each simulation.The function accepts lists as input
 #' as well.
 #'
-#' @param adsim_simulator Function that performs a single simulation run.
 #' @param ngens Number of generations to simulate.
 #' @param k population growth parameter.
 #' @param l number of generations prior to population growth.

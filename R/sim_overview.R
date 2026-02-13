@@ -17,17 +17,19 @@
 
 sim_overview <- function(adsim_df){
   sum_adsim_df <- adsim_df %>%
-    dplyr::group_by(ngens, k, l, admix, m1, m2, ne, p1, p2) %>%
+    dplyr::group_by(.data$ngens, .data$k, .data$l, .data$admix,
+                    .data$m1, .data$m2, .data$ne, .data$p1,
+                    .data$p2) %>%
     dplyr::summarise(
-      mean_pF = mean(pF),
-      sd_pF   = stats::sd(pF),
+      mean_pF = mean(.data$pF),
+      sd_pF   = stats::sd(.data$pF),
       # calculate percentiles
-      Q1_pF = stats::quantile(pF, 0.05),
-      Q2_pF = stats::quantile(pF, 0.10),
-      Q3_pF = stats::quantile(pF, 0.25),
-      Q4_pF = stats::quantile(pF, 0.75),
-      Q5_pF = stats::quantile(pF, 0.90),
-      Q6_pF = stats::quantile(pF, 0.95),
+      Q1_pF = stats::quantile(.data$pF, 0.05),
+      Q2_pF = stats::quantile(.data$pF, 0.10),
+      Q3_pF = stats::quantile(.data$pF, 0.25),
+      Q4_pF = stats::quantile(.data$pF, 0.75),
+      Q5_pF = stats::quantile(.data$pF, 0.90),
+      Q6_pF = stats::quantile(.data$pF, 0.95),
       .groups = "drop"
     )
   # Create vector P1..PN where N = number of rows

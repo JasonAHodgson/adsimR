@@ -16,10 +16,8 @@ Depends:
     tibble
 Imports:
     ggplot2,
-    gridExtra,
-    kableExtra,
     stats,
-    tidyr
+    gridExtra
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3

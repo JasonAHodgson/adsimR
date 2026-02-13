@@ -7,15 +7,18 @@
 #' @return Data frame with selection coefficients.
 #' @export
 #' @examples
-#' result <- compute_selection_coefficients(infile = system.file("extdata","Selection_scenarios.txt", package = "adsimR"),
-#' outfile = paste0(tempdir(), "/output.txt"))
+#' result <-
+#'       compute_selection_coefficients(infile = system.file("extdata",
+#'                                                           "Selection_scenarios.txt",
+#'                                                            package = "adsimR"),
+#'                                    outfile = paste0(tempdir(), "/output.txt"))
 
 compute_selection_coefficients <- function(infile, outfile, recessive = FALSE) {
   if(is.data.frame(infile)) {
     dat <- infile
   } else if (is.character(infile)) {
     if(!file.exists(infile)) stop(paste("ERROR: Cannot find", infile))
-    dat <- read.table(infile, header = TRUE)
+    dat <- utils::read.table(infile, header = TRUE)
   } else {
     stop("ERROR: 'infile' must be either a data frame or a file path (character string)")
   }
@@ -52,7 +55,7 @@ compute_selection_coefficients <- function(infile, outfile, recessive = FALSE) {
 
   dat$s <- mapply(get_s, dat$q, dat$qx, dat$g, recessive)
 
-  write.table(dat, outfile, quote = FALSE, sep = "\t", row.names = FALSE)
+  utils::write.table(dat, outfile, quote = FALSE, sep = "\t", row.names = FALSE)
 
   return(dat)
 }

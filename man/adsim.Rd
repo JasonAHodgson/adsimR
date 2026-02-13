@@ -27,8 +27,6 @@ population.}
 \item{p2}{Initial allele frequency in the second parent population.}
 
 \item{nsims}{Number of simulations to perform.}
-
-\item{adsim_simulator}{Function that performs a single simulation run.}
 }
 \value{
 A data frame containing three columns:
