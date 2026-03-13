@@ -1,6 +1,7 @@
+n_reps <- 10
+
 test_that("test output dimensions", {
   admix_props <- c(0.2, 0.5)
-  n_reps <- 10
   test <- adsim(ngens = 10, k = 2, l = 5, admix = admix_props,
                 m1 = 0.01, m2 = 0.01, ne = 100, p1 = 0.5,
                 p2 = 0.9, nsims = n_reps)
