@@ -24,12 +24,19 @@ plot_simulations <- function(adsim_df){
   # create a lollipop plot that shows mean and sd of final allele frequencies
   plot_lollipop <- function(adsim_df){
     plot_data <- adsimR::sim_overview(adsim_df)
-
+    plot_data <- plot_data %>%
+      dplyr::mutate(
+        param_num = as.numeric(gsub("P", "", param_group))
+      ) %>%
+      dplyr::arrange(param_num) %>%
+      dplyr::mutate(
+        param_group = factor(param_group, levels = param_group)
+      )
     P1 <- ggplot2::ggplot(plot_data, ggplot2::aes(x = c(plot_data$mean_pF, plot_data$sd_pF), y = factor(plot_data$param_group))) +
-      ggplot2::geom_segment(ggplot2::aes(x = plot_data$Q1_pF, xend = plot_data$Q6_pF, y = factor(plot_data$param_group), yend = factor(plot_data$param_group), color = "95%"), linewidth = 13) +
-      ggplot2::geom_segment(ggplot2::aes(x = plot_data$Q2_pF, xend = plot_data$Q5_pF, y = factor(plot_data$param_group), yend = factor(plot_data$param_group), color = "90%"), linewidth = 13) +
-      ggplot2::geom_segment(ggplot2::aes(x = plot_data$Q3_pF, xend = plot_data$Q4_pF, y = factor(plot_data$param_group), yend = factor(plot_data$param_group), color = "75%"), linewidth = 13) +
-      ggplot2::geom_segment(ggplot2::aes(x = plot_data$mean_pF - 0.001, xend = plot_data$mean_pF + 0.001, y = factor(plot_data$param_group), yend = factor(plot_data$param_group), color = "mean"), linewidth = 13) +
+      ggplot2::geom_segment(ggplot2::aes(x = plot_data$Q1_pF, xend = plot_data$Q6_pF, y = factor(plot_data$param_group), yend = factor(plot_data$param_group), color = "95%"), linewidth = 3) +
+      ggplot2::geom_segment(ggplot2::aes(x = plot_data$Q2_pF, xend = plot_data$Q5_pF, y = factor(plot_data$param_group), yend = factor(plot_data$param_group), color = "90%"), linewidth = 3) +
+      ggplot2::geom_segment(ggplot2::aes(x = plot_data$Q3_pF, xend = plot_data$Q4_pF, y = factor(plot_data$param_group), yend = factor(plot_data$param_group), color = "75%"), linewidth = 3) +
+      ggplot2::geom_segment(ggplot2::aes(x = plot_data$mean_pF - 0.001, xend = plot_data$mean_pF + 0.001, y = factor(plot_data$param_group), yend = factor(plot_data$param_group), color = "mean"), linewidth = 3) +
       ggplot2::scale_color_manual(name = "Legend",
                                   values = c("95%" = "#AA336A",
                                              "90%" = "#CF9FFF",
@@ -62,5 +69,10 @@ plot_simulations <- function(adsim_df){
   table4grob <- p_table(adsim_df)
 
   # combine plot and table into single grob
-  return(gridExtra::grid.arrange(grobs = list(plot4grob, table4grob), ncol = 1, width = c(2,1)))
+  if (nrow(table4grob) < 15) {
+    return(gridExtra::grid.arrange(grobs = list(plot4grob, table4grob), ncol = 1, width = c(2,1)))
+  } else {
+    return(plot4grob)
+  }
+
 }
