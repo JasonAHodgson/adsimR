@@ -1,10 +1,23 @@
 #' Compute selection coefficients from allele frequency scenarios
 #'
-#' @param infile Path to input file (columns: g, q, qx).
-#' @param outfile Path to save output table (with added column s).
+#' This function takes a data frame or a path to an input file containing allele
+#' frequency scenarios and computes the selection coefficients based on the
+#' provided data.
+#'
+#' @param infile Either a data frame or path to input file, containing the
+#' following columns:
+#' - g generations
+#' - q: initial allele frequency
+#' - qx: final allele frequency
+#' @param outfile Path to save output table. This will include added column s
+#'   giving the selection coefficient.
 #' @param recessive Logical, if TRUE assumes recessive model, if FALSE assumes
 #'   dominant model. Default is FALSE.
-#' @return Data frame with selection coefficients.
+#' @return A data frame with selection coefficients, containing the columns:
+#' - g: generations
+#' - q: initial allele frequency
+#' - qx: final allele frequency
+#' - s: selection coefficient
 #' @export
 #' @examples
 #' result <-
@@ -27,13 +40,20 @@ compute_selection_coefficients <- function(infile, outfile, recessive = FALSE) {
     stop("Input file must contain columns: g, q, qx")
   }
 
+  # check that q and qx are rounded to two decimal places
+  if (any(round(dat$q, 2) != dat$q) || any(round(dat$qx, 2) != dat$qx)) {
+    message("Rounding q and qx to two decimal places for consistency.")
+    dat$q <- round(dat$q, 2)
+    dat$qx <- round(dat$qx, 2)
+  }
+
   a_prime <- function(allele, s, recessive) {
     if(recessive){
       p <- 1 - allele
       ((p * allele) + allele^2 + s * allele^2) / (1 + s * allele^2) # increasing denominator in proportion
     } else {
       q <- 1 - allele
-      ((allele*q) + s*(allele*q) + allele^2 + s*(allele^2) / (1 + s * allele^2 + s * (allele * q)))
+      ((allele*q) + s*(allele*q) + allele^2 + s*(allele^2)) / (1 + s * allele^2 + s * (allele * q))
     }
   }
 
@@ -45,11 +65,13 @@ compute_selection_coefficients <- function(infile, outfile, recessive = FALSE) {
   }
 
   get_s <- function(q, qx, g, recessive) {
-    s_vals <- seq(0.0001, 0.9999, by = 0.0001)
+    s_vals <- seq(-0.999, 0.9999, by = 0.0001)
     for (s in s_vals) {
       testq <- get_qx(q, g, s, recessive)
       if (round(testq, 2) == qx) return(s)
     }
+    message("Selection coefficient is greater than 0.9999 or less ",
+            "than -0.9999, check your input values.")
     return(NA)
   }
 

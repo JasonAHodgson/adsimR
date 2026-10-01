@@ -13,6 +13,7 @@ What the package does (one paragraph).
 
 Authors:
 \itemize{
+  \item Evie Carter \email{ejc199@pgr.aru.ac.uk} [copyright holder]
   \item Jael Vakil Kumar
   \item Petra Dozie
   \item Jason Hodgson

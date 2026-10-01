@@ -1,13 +1,14 @@
 #' plot_simulations
 #'
-#' This function creates an autoplot of adsim output
+#' This function creates an autoplot of `adsim` outputs.
 #'
 #' @param adsim_df  A data frame containing three columns:
 #' - Sim: a numeric index containing the simulation run
 #' - p0: a numeric containing the starting allele following the first
 #'   generation of admixture.
 #' - pF: a numeric containing the final allele frequency of each simulation.
-#' @return a plot containing two panes:
+#' TODO add additional columns
+#' @return A plot containing two panes:
 #' - a plot containing the summary of allele frequencies of the simulation,
 #' including quartiles at 75%, 90%, and 95%.
 #' - a table containing the parameters of each simulation.
@@ -32,11 +33,11 @@ plot_simulations <- function(adsim_df){
       dplyr::mutate(
         param_group = factor(param_group, levels = param_group)
       )
-    P1 <- ggplot2::ggplot(plot_data, ggplot2::aes(x = c(plot_data$mean_pF, plot_data$sd_pF), y = factor(plot_data$param_group))) +
-      ggplot2::geom_segment(ggplot2::aes(x = plot_data$Q1_pF, xend = plot_data$Q6_pF, y = factor(plot_data$param_group), yend = factor(plot_data$param_group), color = "95%"), linewidth = 3) +
-      ggplot2::geom_segment(ggplot2::aes(x = plot_data$Q2_pF, xend = plot_data$Q5_pF, y = factor(plot_data$param_group), yend = factor(plot_data$param_group), color = "90%"), linewidth = 3) +
-      ggplot2::geom_segment(ggplot2::aes(x = plot_data$Q3_pF, xend = plot_data$Q4_pF, y = factor(plot_data$param_group), yend = factor(plot_data$param_group), color = "75%"), linewidth = 3) +
-      ggplot2::geom_segment(ggplot2::aes(x = plot_data$mean_pF - 0.001, xend = plot_data$mean_pF + 0.001, y = factor(plot_data$param_group), yend = factor(plot_data$param_group), color = "mean"), linewidth = 3) +
+    P1 <- ggplot2::ggplot(plot_data, ggplot2::aes(x = c(.data$mean_pF, .data$sd_pF), y = factor(.data$param_group))) +
+      ggplot2::geom_segment(ggplot2::aes(x = .data$Q1_pF, xend = .data$Q6_pF, y = factor(.data$param_group), yend = factor(.data$param_group), color = "95%"), linewidth = 3) +
+      ggplot2::geom_segment(ggplot2::aes(x = .data$Q2_pF, xend = .data$Q5_pF, y = factor(.data$param_group), yend = factor(.data$param_group), color = "90%"), linewidth = 3) +
+      ggplot2::geom_segment(ggplot2::aes(x = .data$Q3_pF, xend = .data$Q4_pF, y = factor(.data$param_group), yend = factor(.data$param_group), color = "75%"), linewidth = 3) +
+      ggplot2::geom_segment(ggplot2::aes(x = .data$mean_pF - 0.001, xend = .data$mean_pF + 0.001, y = factor(.data$param_group), yend = factor(.data$param_group), color = "mean"), linewidth = 3) +
       ggplot2::scale_color_manual(name = "Legend",
                                   values = c("95%" = "#AA336A",
                                              "90%" = "#CF9FFF",

@@ -7,19 +7,49 @@
 sim_overview(adsim_df)
 }
 \arguments{
-\item{adsim_df}{A data frame containing three columns:
+\item{adsim_df}{A data frame containing the output of an \code{adsim} simulation,
+with the following columns:
 \itemize{
 \item Sim: a numeric index containing the simulation run
-\item p0: a numeric containing the starting allele following the first
+\item p0: a numeric containing the starting allele frequency following the first
 generation of admixture.
 \item pF: a numeric containing the final allele frequency of each simulation.
+\item ngens: Number of generations simualted.
+\item k: population growth parameter
+\item l: number of generations prior to population growth.
+\item admix: Proportion of ancestry contributed by the first parent
+population.
+\item ne: effective population size of generation 0.
+\item p1: Initial allele frequency in the first parent population.
+\item p2: Initial allele frequency in the second parent population.
+\item m1: Migration rate from the first parent population.
+\item m2: Migration rate from the second parent population.
 }}
 }
 \value{
-a data frame summarizing the mean, standard deviation, and percentiles
+A data frame summarizing, for each unique set of parameters, the
+mean, standard deviation, and percentiles across the set of n simulations.
+Columns of the returned data frame are:
+\itemize{
+\item ngens: Number of generations simualted.
+\item k: population growth parameter
+\item l: number of generations prior to population growth.
+\item admix: Proportion of ancestry contributed by the first parent
+population.
+\item m1: Migration rate from the first parent population.
+\item m2: Migration rate from the second parent population.
+\item ne: effective population size of generation 0.
+\item p1: Initial allele frequency in the first parent population.
+\item p2: Initial allele frequency in the second parent population.
+\item mean_pF: Mean final allele frequency across simulations.
+\item sd_pF: Standard deviation of final allele frequency across simulations.
+\item Q1_pF to Q6_pF: Percentiles of final allele frequency across simulations.
+\item param_group: A unique identifier for each combination of parameters,
+i.e. each unique set of simulations.
+}
 }
 \description{
-This function creates an overview summary of adsim output
+This function creates an overview summary of \code{adsim} output.
 }
 \examples{
 test <- adsim(ngens = 10, k = 2, l = 5, admix = c(0.2, 0.5),

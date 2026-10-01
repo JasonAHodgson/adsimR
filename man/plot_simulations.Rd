@@ -13,10 +13,11 @@ plot_simulations(adsim_df)
 \item p0: a numeric containing the starting allele following the first
 generation of admixture.
 \item pF: a numeric containing the final allele frequency of each simulation.
+TODO add additional columns
 }}
 }
 \value{
-a plot containing two panes:
+A plot containing two panes:
 \itemize{
 \item a plot containing the summary of allele frequencies of the simulation,
 including quartiles at 75\%, 90\%, and 95\%.
@@ -24,7 +25,7 @@ including quartiles at 75\%, 90\%, and 95\%.
 }
 }
 \description{
-This function creates an autoplot of adsim output
+This function creates an autoplot of \code{adsim} outputs.
 }
 \examples{
 test <- adsim(ngens = 10, k = 2, l = 5, admix = c(0.2, 0.5),

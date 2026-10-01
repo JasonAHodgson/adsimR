@@ -7,18 +7,33 @@
 compute_selection_coefficients(infile, outfile, recessive = FALSE)
 }
 \arguments{
-\item{infile}{Path to input file (columns: g, q, qx).}
+\item{infile}{Either a data frame or path to input file, containing the
+following columns:
+\itemize{
+\item g generations
+\item q: initial allele frequency
+\item qx: final allele frequency
+}}
 
-\item{outfile}{Path to save output table (with added column s).}
+\item{outfile}{Path to save output table. This will include added column s
+giving the selection coefficient.}
 
 \item{recessive}{Logical, if TRUE assumes recessive model, if FALSE assumes
 dominant model. Default is FALSE.}
 }
 \value{
-Data frame with selection coefficients.
+A data frame with selection coefficients, containing the columns:
+\itemize{
+\item g: generations
+\item q: initial allele frequency
+\item qx: final allele frequency
+\item s: selection coefficient
+}
 }
 \description{
-Compute selection coefficients from allele frequency scenarios
+This function takes a data frame or a path to an input file containing allele
+frequency scenarios and computes the selection coefficients based on the
+provided data.
 }
 \examples{
 result <-

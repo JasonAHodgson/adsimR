@@ -28,3 +28,15 @@ adsim_output <- adsim(ngens = 10, k = 2, l = 5, admix = c(0.2, 0.4, 0.6),
              p2 = 0.9, nsims = n_reps)
 expect_equal(adsim_output$admix, adsim_simulator_output$admix)
 })
+
+
+# TODO make parameter checks have expected error and warning messages
+test_that("adsim warnings",{
+
+  expect_error(adsim(ngens = 10, k = 2, l = 10, admix = admix_list,
+                     m1 = 0.01, m2 = 0.01, ne = 100, p1 = 0.5,
+                     p2 = 0.9, nsims = 10),
+
+  )
+
+})
