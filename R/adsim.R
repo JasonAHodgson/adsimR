@@ -9,11 +9,11 @@
 #' final allele frequency of each simulation.The function accepts lists as input
 #' as well.
 #'
-#' @param adsim_simulator Function that performs a single simulation run.
 #' @param ngens Number of generations to simulate.
 #' @param k population growth parameter.
 #' @param l number of generations prior to population growth.
-#' @param admix Proportion of ancestry contributed by the first parent population.
+#' @param admix Proportion of ancestry contributed by the first parent
+#'   population.
 #' @param ne effective population size of generation 0.
 #' @param p1 Initial allele frequency in the first parent population.
 #' @param p2 Initial allele frequency in the second parent population.
@@ -22,7 +22,8 @@
 #' @param nsims Number of simulations to perform.
 #' @return A data frame containing three columns:
 #' - Sim: a numeric index containing the simulation run
-#' - p0: a numeric containing the starting allele following the first generation of admixture.
+#' - p0: a numeric containing the starting allele following the first generation
+#'   of admixture.
 #' - pF: a numeric containing the final allele frequency of each simulation.
 #' @export
 

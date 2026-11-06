@@ -11,7 +11,8 @@
 #' @param ngens Number of generations to simulate.
 #' @param k population growth parameter.
 #' @param l number of generations prior to population growth.
-#' @param admix Proportion of ancestry contributed by the first parent population.
+#' @param admix Proportion of ancestry contributed by the first parent
+#'   population.
 #' @param ne effective population size of generation 0.
 #' @param p1 Initial allele frequency in the first parent population.
 #' @param p2 Initial allele frequency in the second parent population.
@@ -20,9 +21,11 @@
 #' @param nsims Number of simulations to perform.
 #' @return A data frame containing three columns:
 #' - Sim: a numeric index containing the simulation run
-#' - p0: a numeric containing the starting allele following the first generation of admixture.
+#' - p0: a numeric containing the starting allele following the first generation
+#'   of admixture.
 #' - pF: a numeric containing the final allele frequency of each simulation.
-#' @export
+#' @keywords internal
+#' @noRd
 
 adsim_simulator <- function(
     ngens,      # generations since admixture
@@ -51,7 +54,7 @@ adsim_simulator <- function(
   stopifnot(is.numeric(nsims), nsims > 0)
 
   choose_allele <- function(n, p) {
-    sum(runif(2 * n) <= p)
+    sum(stats::runif(2 * n) <= p)
   }
 
   results <- data.frame(Sim = integer(), p0 = numeric(), pF = numeric(),
@@ -67,7 +70,7 @@ adsim_simulator <- function(
       n_p1 <- if (raw_p1 %% 1 != 0) {
         int <- floor(raw_p1)
         fp <- raw_p1 - int
-        if (runif(1) > fp) int else int + 1
+        if (stats::runif(1) > fp) int else int + 1
       } else raw_p1
       n_p2 <- ne - n_p1
 
