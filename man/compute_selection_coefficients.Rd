@@ -35,6 +35,26 @@ This function takes a data frame or a path to an input file containing allele
 frequency scenarios and computes the selection coefficients based on the
 provided data.
 }
+\details{
+Selection is modelled as viability selection at a single diallelic
+locus under Hardy-Weinberg proportions. Writing the focal allele frequency
+as \eqn{q}, with \eqn{p = 1 - q}, the relative genotype fitnesses are
+\eqn{w_{pp} = 1}, \eqn{w_{pq} = 1 + hs} and \eqn{w_{qq} = 1 + s}, where
+\eqn{h} is the dominance coefficient of the focal allele. Setting
+\code{recessive = TRUE} gives \eqn{h = 0} (the focal allele is fully recessive,
+so selection acts only on \eqn{qq} homozygotes) and \code{recessive = FALSE}
+gives \eqn{h = 1} (fully dominant, so heterozygotes have the same fitness
+as \eqn{qq} homozygotes). The allele frequency after one generation is
+\deqn{q' = \frac{q\,[\,p(1 + hs) + q(1 + s)\,]}{1 + 2hspq + sq^{2}}.}
+For a given observed frequency change a dominant allele therefore requires
+a smaller selection coefficient than a recessive one, because selection
+also acts on heterozygotes.
+
+The coefficient is found by grid search over \eqn{s} in steps of
+\eqn{10^{-4}}, returning the smallest value whose projected frequency
+matches \code{qx} to two decimal places. The recessive case reproduces the
+original \code{s_co.pl} Perl implementation in \code{data-raw/perl_base_code}.
+}
 \examples{
 result <-
       compute_selection_coefficients(infile = system.file("extdata",

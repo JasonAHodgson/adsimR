@@ -17,55 +17,68 @@
 #' @param ne effective population size of generation 0.
 #' @param p1 Initial allele frequency in the first parent population.
 #' @param p2 Initial allele frequency in the second parent population.
-#' @param m1 Migration rate from the first parent population.
-#' @param m2 Migration rate from the second parent population.
+#' @param m1 Per-generation migration rate from the first parent population,
+#'   that is the proportion of gene copies in the admixed population replaced
+#'   each generation by copies drawn from that population. Must lie in
+#'   \[0, 1\], and `m1 + m2` must not exceed 1.
+#' @param m2 Per-generation migration rate from the second parent population,
+#'   defined as for `m1`.
 #' @param nsims Number of simulations to perform.
 #' @return A data frame containing three columns:
 #' - Sim: a numeric index containing the simulation run
 #' - p0: a numeric containing the starting allele following the first generation
 #'   of admixture.
 #' - pF: a numeric containing the final allele frequency of each simulation.
+#' @details Generation 0 is formed by sampling `admix * ne` individuals from
+#'   the first parent population and the remainder from the second. Each
+#'   subsequent generation is produced in two steps. Migration acts first on
+#'   the gene pool, following the continent-island model, so that the frequency
+#'   entering the drift step is
+#'   \deqn{p^{*} = (1 - m_1 - m_2)\,p + m_1 p_1 + m_2 p_2,}
+#'   and genetic drift then follows, with \eqn{2N} gene copies drawn
+#'   binomially at frequency \eqn{p^{*}}. Migration therefore changes allele
+#'   frequency but not census size, which is governed by `k` and `l` alone and
+#'   is capped at 5000 individuals.
 #' @export
 
 adsim <- function(ngens, k, l, admix,
-                      m1, m2, ne, p1, p2, nsims)
-  {
-  # Input validation for vectors
-  stopifnot(all(is.numeric(ngens), ngens > 0))
-  stopifnot(all(is.numeric(k), k > 0))
-  stopifnot(all(is.numeric(l), l >= 0, l < ngens))
-  stopifnot(all(is.numeric(admix), admix >= 0, admix <= 1))
-  stopifnot(all(is.numeric(m1), m1 >= 0))
-  stopifnot(all(is.numeric(m2), m2 >= 0))
-  stopifnot(all(is.numeric(ne), ne > 0))
-  stopifnot(all(is.numeric(p1), p1 >= 0, p1 <= 1))
-  stopifnot(all(is.numeric(p2), p2 >= 0, p2 <= 1))
-  stopifnot(all(is.numeric(nsims), nsims > 0))
-
-  # Create parameter combinations
+                  m1, m2, ne, p1, p2, nsims,
+                  fixed_p0 = NULL,   # Optional fixed starting frequency
+                  max_n = 5000) {    # Maximum simulated population size
+  # Make every combination of parameter values.
   param_combos <- expand.grid(
     ngens = ngens, k = k, l = l, admix = admix,
-    m1 = m1, m2 = m2, ne = ne, p1 = p1, p2 = p2, nsims = nsims
+    m1 = m1, m2 = m2, ne = ne, p1 = p1, p2 = p2, nsims = nsims,
+    KEEP.OUT.ATTRS = FALSE
   )
 
-  # Sanity check - compute the number of combinations of parameters
-  n_combinations <- length(ngens) * length(k) * length(l) * length(admix) *
-    length(m1) * length(m2) * length(ne) * length(p1) * length(p2) * length(nsims)
-  total_sims <- n_combinations * nsims
-
-
-  # Function to run mapply and combine results
-  combine_sims <- function(ngens, k, l, admix, m1, m2, ne, p1, p2, nsims) {
-    results_list <- mapply(adsim_simulator, ngens, k, l, admix, m1, m2, ne, p1, p2, nsims, SIMPLIFY = FALSE)
-    results <- do.call(rbind, results_list)
-    return(results)
+  # Skip impossible combinations instead of stopping everything.
+  valid <- param_combos$l <= param_combos$ngens &
+    param_combos$m1 + param_combos$m2 <= 1
+  if (!any(valid)) {
+    stop("No valid combinations: check l <= ngens and m1 + m2 <= 1.")
   }
+  if (any(!valid)) {
+    warning(sum(!valid), " combination(s) skipped: l > ngens or m1 + m2 > 1.")
+  }
+  param_combos <- param_combos[valid, , drop = FALSE]
 
-  # Run simulations and combine results
-  return(combine_sims(
-    param_combos$ngens, param_combos$k, param_combos$l, param_combos$admix,
-    param_combos$m1, param_combos$m2, param_combos$ne, param_combos$p1,
-    param_combos$p2, param_combos$nsims
-  ))
+  message(nrow(param_combos), " scenario(s), ",
+          sum(param_combos$nsims), " simulations in total.")
+
+  # Run the simulator once per scenario; it checks each value itself.
+  results_list <- lapply(seq_len(nrow(param_combos)), function(i) {
+    pc <- param_combos[i, ]
+    res <- adsim_simulator(
+      ngens = pc$ngens, k = pc$k, l = pc$l, admix = pc$admix,
+      m1 = pc$m1, m2 = pc$m2, ne = pc$ne, p1 = pc$p1, p2 = pc$p2,
+      nsims = pc$nsims, fixed_p0 = fixed_p0, max_n = max_n
+    )
+    cbind(Scenario = i, res)
+  })
+
+  results <- do.call(rbind, results_list)
+  rownames(results) <- NULL
+  results
 }
 
