@@ -24,6 +24,12 @@
 #' @param m2 Per-generation migration rate from the second parent population,
 #'   defined as for `m1`.
 #' @param nsims Number of simulations to perform.
+#' @param fixed_p0 Optional fixed starting allele frequency, used for every run
+#'   in place of forming generation 0 from the two parent populations.
+#' @param max_n Ceiling on the simulated census size, applied once population
+#'   growth begins. Defaults to `Inf`, so size follows `k` and `l` without an
+#'   arbitrary limit. Set it to a finite whole number to cap growth, for
+#'   instance at a carrying capacity.
 #' @return A data frame containing three columns:
 #' - Sim: a numeric index containing the simulation run
 #' - p0: a numeric containing the starting allele following the first generation
@@ -37,14 +43,14 @@
 #'   \deqn{p^{*} = (1 - m_1 - m_2)\,p + m_1 p_1 + m_2 p_2,}
 #'   and genetic drift then follows, with \eqn{2N} gene copies drawn
 #'   binomially at frequency \eqn{p^{*}}. Migration therefore changes allele
-#'   frequency but not census size, which is governed by `k` and `l` alone and
-#'   is capped at 5000 individuals.
+#'   frequency but not census size, which is governed by `k`, `l` and `max_n`
+#'   alone.
 #' @export
 
 adsim <- function(ngens, k, l, admix,
                   m1, m2, ne, p1, p2, nsims,
                   fixed_p0 = NULL,   # Optional fixed starting frequency
-                  max_n = 5000) {    # Maximum simulated population size
+                  max_n = Inf) {     # Ceiling on simulated population size
   # Make every combination of parameter values.
   param_combos <- expand.grid(
     ngens = ngens, k = k, l = l, admix = admix,

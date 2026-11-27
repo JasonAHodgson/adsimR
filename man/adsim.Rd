@@ -4,7 +4,20 @@
 \alias{adsim}
 \title{adsim}
 \usage{
-adsim(ngens, k, l, admix, m1, m2, ne, p1, p2, nsims)
+adsim(
+  ngens,
+  k,
+  l,
+  admix,
+  m1,
+  m2,
+  ne,
+  p1,
+  p2,
+  nsims,
+  fixed_p0 = NULL,
+  max_n = Inf
+)
 }
 \arguments{
 \item{ngens}{Number of generations to simulate.}
@@ -31,6 +44,14 @@ defined as for \code{m1}.}
 \item{p2}{Initial allele frequency in the second parent population.}
 
 \item{nsims}{Number of simulations to perform.}
+
+\item{fixed_p0}{Optional fixed starting allele frequency, used for every run
+in place of forming generation 0 from the two parent populations.}
+
+\item{max_n}{Ceiling on the simulated census size, applied once population
+growth begins. Defaults to \code{Inf}, so size follows \code{k} and \code{l} without an
+arbitrary limit. Set it to a finite whole number to cap growth, for
+instance at a carrying capacity.}
 }
 \value{
 A data frame containing three columns:
@@ -60,6 +81,6 @@ entering the drift step is
 \deqn{p^{*} = (1 - m_1 - m_2)\,p + m_1 p_1 + m_2 p_2,}
 and genetic drift then follows, with \eqn{2N} gene copies drawn
 binomially at frequency \eqn{p^{*}}. Migration therefore changes allele
-frequency but not census size, which is governed by \code{k} and \code{l} alone and
-is capped at 5000 individuals.
+frequency but not census size, which is governed by \code{k}, \code{l} and \code{max_n}
+alone.
 }
