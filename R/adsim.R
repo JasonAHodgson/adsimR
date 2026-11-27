@@ -9,21 +9,36 @@
 #' final allele frequency of each simulation.The function accepts lists as input
 #' as well.
 #'
-#' @param adsim_simulator Function that performs a single simulation run.
 #' @param ngens Number of generations to simulate.
 #' @param k population growth parameter.
 #' @param l number of generations prior to population growth.
-#' @param admix Proportion of ancestry contributed by the first parent population.
+#' @param admix Proportion of ancestry contributed by the first parent
+#'   population.
 #' @param ne effective population size of generation 0.
 #' @param p1 Initial allele frequency in the first parent population.
 #' @param p2 Initial allele frequency in the second parent population.
-#' @param m1 Migration rate from the first parent population.
-#' @param m2 Migration rate from the second parent population.
+#' @param m1 Per-generation migration rate from the first parent population,
+#'   that is the proportion of gene copies in the admixed population replaced
+#'   each generation by copies drawn from that population. Must lie in
+#'   \[0, 1\], and `m1 + m2` must not exceed 1.
+#' @param m2 Per-generation migration rate from the second parent population,
+#'   defined as for `m1`.
 #' @param nsims Number of simulations to perform.
 #' @return A data frame containing three columns:
 #' - Sim: a numeric index containing the simulation run
-#' - p0: a numeric containing the starting allele following the first generation of admixture.
+#' - p0: a numeric containing the starting allele following the first generation
+#'   of admixture.
 #' - pF: a numeric containing the final allele frequency of each simulation.
+#' @details Generation 0 is formed by sampling `admix * ne` individuals from
+#'   the first parent population and the remainder from the second. Each
+#'   subsequent generation is produced in two steps. Migration acts first on
+#'   the gene pool, following the continent-island model, so that the frequency
+#'   entering the drift step is
+#'   \deqn{p^{*} = (1 - m_1 - m_2)\,p + m_1 p_1 + m_2 p_2,}
+#'   and genetic drift then follows, with \eqn{2N} gene copies drawn
+#'   binomially at frequency \eqn{p^{*}}. Migration therefore changes allele
+#'   frequency but not census size, which is governed by `k` and `l` alone and
+#'   is capped at 5000 individuals.
 #' @export
 
 adsim <- function(ngens, k, l, admix,
