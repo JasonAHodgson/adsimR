@@ -16,8 +16,12 @@
 #' @param ne effective population size of generation 0.
 #' @param p1 Initial allele frequency in the first parent population.
 #' @param p2 Initial allele frequency in the second parent population.
-#' @param m1 Migration rate from the first parent population.
-#' @param m2 Migration rate from the second parent population.
+#' @param m1 Per-generation migration rate from the first parent population,
+#'   that is the proportion of gene copies in the admixed population replaced
+#'   each generation by copies drawn from that population. Must lie in
+#'   \[0, 1\], and `m1 + m2` must not exceed 1.
+#' @param m2 Per-generation migration rate from the second parent population,
+#'   defined as for `m1`.
 #' @param nsims Number of simulations to perform.
 #' @return A data frame containing three columns:
 #' - Sim: a numeric index containing the simulation run
@@ -46,8 +50,12 @@ adsim_simulator <- function(
   stopifnot(is.numeric(k), k > 0)
   stopifnot(is.numeric(l), l >= 0, l < ngens)
   stopifnot(is.numeric(admix), admix >= 0, admix <= 1)
-  stopifnot(is.numeric(m1), m1 >= 0)
-  stopifnot(is.numeric(m2), m2 >= 0)
+  stopifnot(is.numeric(m1), m1 >= 0, m1 <= 1)
+  stopifnot(is.numeric(m2), m2 >= 0, m2 <= 1)
+  if (m1 + m2 > 1) {
+    stop("m1 + m2 must not exceed 1: migration rates are the proportions of ",
+         "the gene pool replaced each generation.")
+  }
   stopifnot(is.numeric(ne), ne > 0)
   stopifnot(is.numeric(p1), p1 >= 0, p1 <= 1)
   stopifnot(is.numeric(p2), p2 >= 0, p2 <= 1)
@@ -86,17 +94,13 @@ adsim_simulator <- function(
         new_n <- if (g_count > l) floor(old_n * k) else ne
         new_n <- min(new_n, max_n)
 
-        A_count <- choose_allele(new_n, old_A)
+        # Migration acts on the gene pool before drift. A proportion m1 of the
+        # gene copies is replaced by copies drawn from parent population 1 and
+        # a proportion m2 by copies from parent population 2, leaving the
+        # census size to follow the growth model alone.
+        pool_A <- ((1 - m1 - m2) * old_A) + (m1 * p1) + (m2 * p2)
 
-        if (m1 > 0) {
-          A_count <- A_count + choose_allele(m1, p1)
-          new_n <- new_n + m1
-        }
-
-        if (m2 > 0) {
-          A_count <- A_count + choose_allele(m2, p2)
-          new_n <- new_n + m2
-        }
+        A_count <- choose_allele(new_n, pool_A)
 
         old_A <- A_count / (2 * new_n)
         old_n <- new_n

@@ -30,6 +30,37 @@ expect_equal(adsim_output$admix, adsim_simulator_output$admix)
 })
 
 
+test_that("migration moves the allele frequency toward the source", {
+  # The allele is absent from the admixed population (admix = 1 with p1 = 0)
+  # and fixed in the second parent population, so any copy observed at the end
+  # must have arrived by migration.
+  no_mig <- adsim(ngens = 20, k = 1.05, l = 5, admix = 1,
+                  m1 = 0, m2 = 0, ne = 200, p1 = 0, p2 = 1, nsims = 200)
+  expect_equal(mean(no_mig$pF), 0)
+
+  with_mig <- adsim(ngens = 20, k = 1.05, l = 5, admix = 1,
+                    m1 = 0, m2 = 0.1, ne = 200, p1 = 0, p2 = 1, nsims = 200)
+
+  # Binomial sampling is unbiased and the migration step is linear in p, so the
+  # mean final frequency tracks the deterministic continent-island recursion.
+  # The generation loop runs ngens - 1 times.
+  expected <- 0
+  for (i in seq_len(19)) expected <- (0.9 * expected) + (0.1 * 1)
+  expect_equal(mean(with_mig$pF), expected, tolerance = 0.03)
+})
+
+test_that("migration rates outside the unit interval are rejected", {
+  expect_error(
+    adsim(ngens = 5, k = 1, l = 1, admix = 0.5, m1 = 0.6, m2 = 0.6,
+          ne = 50, p1 = 0.5, p2 = 0.5, nsims = 1),
+    "m1 \\+ m2 must not exceed 1"
+  )
+  expect_error(
+    adsim(ngens = 5, k = 1, l = 1, admix = 0.5, m1 = 1.5, m2 = 0,
+          ne = 50, p1 = 0.5, p2 = 0.5, nsims = 1)
+  )
+})
+
 # TODO make parameter checks have expected error and warning messages
 test_that("adsim warnings",{
 
