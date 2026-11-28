@@ -14,10 +14,14 @@ adsim(
   ne,
   p1,
   p2,
-  nsims,
+  nsims = "auto",
   fixed_p0 = NULL,
   max_n = Inf,
-  keep_sims = TRUE
+  keep_sims = TRUE,
+  precision = 0.01,
+  min_nsims = 500,
+  max_nsims = 1e+05,
+  conf = 0.95
 )
 }
 \arguments{
@@ -44,7 +48,11 @@ defined as for \code{m1}.}
 
 \item{p2}{Initial allele frequency in the second parent population.}
 
-\item{nsims}{Number of simulations to perform.}
+\item{nsims}{Number of simulations to perform, or \code{"auto"}, the default, to
+choose a number for each scenario by simulating until the distribution is
+resolved to \code{precision}. A fixed number is used exactly as given; the
+precision it achieved is reported either way, so a fixed choice can be
+checked after the fact.}
 
 \item{fixed_p0}{Optional fixed starting allele frequency, used for every run
 in place of forming generation 0 from the two parent populations.}
@@ -58,6 +66,19 @@ instance at a carrying capacity.}
 scenario is summarised and its runs discarded, so \code{nsims} can be raised
 without the memory cost of keeping every run. Summary statistics are
 unaffected; only \verb{$sims} and \code{\link[=as.data.frame]{as.data.frame()}} need the runs.}
+
+\item{precision}{Target Monte Carlo half-width, on the 0 to 1 scale shared
+by allele frequencies and proportions. The default of 0.01 means every
+quantile and absorption proportion reported for a scenario is pinned to
+about one percentage point.}
+
+\item{min_nsims}{Number of runs in the first batch when \code{nsims = "auto"}.}
+
+\item{max_nsims}{Ceiling on the runs used for one scenario when
+\code{nsims = "auto"}. Reaching it stops the scenario with \code{converged = FALSE}
+in the summary rather than running without limit.}
+
+\item{conf}{Confidence level for the Monte Carlo intervals.}
 }
 \value{
 An \link{adsim_result}: the conditions of each scenario, the individual

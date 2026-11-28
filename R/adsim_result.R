@@ -125,6 +125,28 @@ as_run_frame <- function(x) {
 #'     increase, because migration pulls the frequency toward an intermediate
 #'     value; that is why the two heterozygosities are reported raw rather than
 #'     as a proportion retained.}
+#'   \item{mc_precision, converged}{How tightly the runs pin down the
+#'     distribution: the widest Monte Carlo half-width across the reported
+#'     quantiles and the absorption proportions, and whether it met the
+#'     `precision` asked of [adsim()]. Reported whether `nsims` was chosen
+#'     adaptively or fixed, so a fixed choice can be checked after the fact.
+#'     `mc_precision_props` and `mc_precision_quantiles` give the two parts.
+#'     When `nsims = "auto"` the same runs both decide when to stop and report
+#'     the precision reached, which makes the reported figure mildly
+#'     optimistic: over repeated runs of the same scenario the spread of the
+#'     reported statistics was up to about a fifth wider than `mc_precision`
+#'     suggested, while still meeting the `precision` that was asked for.}
+#'   \item{quantiles_at_atom}{How many of the seven reported quantile levels
+#'     are left undetermined by an atom of the distribution, which is almost
+#'     always the pile-up at 0 or 1. When the cumulative distribution jumps
+#'     across a level, the quantile there is the atom itself, and if the jump
+#'     straddles the level closely its interval spans the gap to the next atom
+#'     and stays wide however many runs are added. Such a level is excluded
+#'     from `mc_precision` and counted here; a level buried well inside an atom
+#'     is perfectly determined and is kept. Where this is non-zero the affected
+#'     quantile can land on either atom from one run to the next, so read the
+#'     proportions instead: with runs split evenly between lost and fixed, the
+#'     median is 0 or 1 at random while `prop_lost` is stable.}
 #'   \item{mean_expected, sd_expected, sd_ratio}{The exact mean and standard
 #'     deviation from [adsim_moments()], and the ratio of simulated to expected
 #'     standard deviation. A ratio near 1 confirms the simulation behaved as

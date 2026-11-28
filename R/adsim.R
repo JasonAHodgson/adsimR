@@ -23,7 +23,20 @@
 #'   \[0, 1\], and `m1 + m2` must not exceed 1.
 #' @param m2 Per-generation migration rate from the second parent population,
 #'   defined as for `m1`.
-#' @param nsims Number of simulations to perform.
+#' @param nsims Number of simulations to perform, or `"auto"`, the default, to
+#'   choose a number for each scenario by simulating until the distribution is
+#'   resolved to `precision`. A fixed number is used exactly as given; the
+#'   precision it achieved is reported either way, so a fixed choice can be
+#'   checked after the fact.
+#' @param precision Target Monte Carlo half-width, on the 0 to 1 scale shared
+#'   by allele frequencies and proportions. The default of 0.01 means every
+#'   quantile and absorption proportion reported for a scenario is pinned to
+#'   about one percentage point.
+#' @param min_nsims Number of runs in the first batch when `nsims = "auto"`.
+#' @param max_nsims Ceiling on the runs used for one scenario when
+#'   `nsims = "auto"`. Reaching it stops the scenario with `converged = FALSE`
+#'   in the summary rather than running without limit.
+#' @param conf Confidence level for the Monte Carlo intervals.
 #' @param fixed_p0 Optional fixed starting allele frequency, used for every run
 #'   in place of forming generation 0 from the two parent populations.
 #' @param max_n Ceiling on the simulated census size, applied once population
@@ -53,14 +66,33 @@
 #' @export
 
 adsim <- function(ngens, k, l, admix,
-                  m1, m2, ne, p1, p2, nsims,
+                  m1, m2, ne, p1, p2, nsims = "auto",
                   fixed_p0 = NULL,   # Optional fixed starting frequency
                   max_n = Inf,       # Ceiling on simulated population size
-                  keep_sims = TRUE) {  # Store the individual runs?
-  # Make every combination of parameter values.
+                  keep_sims = TRUE,  # Store the individual runs?
+                  precision = 0.01,  # Target Monte Carlo half-width
+                  min_nsims = 500,   # First batch when choosing nsims
+                  max_nsims = 1e5,   # Ceiling when choosing nsims
+                  conf = 0.95) {     # Confidence level for that half-width
+  choose_nsims <- is.character(nsims) &&
+    length(nsims) == 1L && identical(nsims, "auto")
+  if (!choose_nsims) {
+    stopifnot(is.numeric(nsims), all(nsims > 0), all(nsims == floor(nsims)))
+  }
+  stopifnot(
+    is.numeric(precision), length(precision) == 1L,
+    precision > 0, precision < 1,
+    is.numeric(min_nsims), length(min_nsims) == 1L, min_nsims >= 2,
+    is.numeric(max_nsims), length(max_nsims) == 1L, max_nsims >= min_nsims,
+    is.numeric(conf), length(conf) == 1L, conf > 0, conf < 1
+  )
+
+  # Make every combination of parameter values. When nsims is chosen
+  # adaptively it is not crossed with the rest; each scenario gets its own.
   param_combos <- expand.grid(
     ngens = ngens, k = k, l = l, admix = admix,
-    m1 = m1, m2 = m2, ne = ne, p1 = p1, p2 = p2, nsims = nsims,
+    m1 = m1, m2 = m2, ne = ne, p1 = p1, p2 = p2,
+    nsims = if (choose_nsims) NA_real_ else nsims,
     KEEP.OUT.ATTRS = FALSE
   )
 
@@ -75,8 +107,13 @@ adsim <- function(ngens, k, l, admix,
   }
   param_combos <- param_combos[valid, , drop = FALSE]
 
-  message(nrow(param_combos), " scenario(s), ",
-          sum(param_combos$nsims), " simulations in total.")
+  if (choose_nsims) {
+    message(nrow(param_combos), " scenario(s); choosing the number of runs ",
+            "for each to reach a Monte Carlo half-width of ", precision, ".")
+  } else {
+    message(nrow(param_combos), " scenario(s), ",
+            sum(param_combos$nsims), " simulations in total.")
+  }
 
   # Run the simulator once per scenario; it checks each value itself.
   conditions <- vector("list", nrow(param_combos))
@@ -86,11 +123,25 @@ adsim <- function(ngens, k, l, admix,
   for (i in seq_len(nrow(param_combos))) {
     pc <- param_combos[i, ]
 
-    res <- adsim_simulator(
+    sim_args <- list(
       ngens = pc$ngens, k = pc$k, l = pc$l, admix = pc$admix,
       m1 = pc$m1, m2 = pc$m2, ne = pc$ne, p1 = pc$p1, p2 = pc$p2,
-      nsims = pc$nsims, fixed_p0 = fixed_p0, max_n = max_n
+      fixed_p0 = fixed_p0, max_n = max_n
     )
+
+    if (choose_nsims) {
+      adaptive <- simulate_to_precision(
+        sim_args, precision = precision, min_nsims = min_nsims,
+        max_nsims = max_nsims, conf = conf
+      )
+      res <- data.frame(Sim = seq_along(adaptive$pF),
+                        p0 = adaptive$p0, pF = adaptive$pF)
+      pc$nsims <- length(adaptive$pF)
+      reached <- adaptive$precision_reached
+    } else {
+      res <- do.call(adsim_simulator, c(sim_args, list(nsims = pc$nsims)))
+      reached <- run_precision(res$pF, precision = precision, conf = conf)
+    }
 
     expected <- adsim_moments(
       ngens = pc$ngens, k = pc$k, l = pc$l, admix = pc$admix,
@@ -112,7 +163,14 @@ adsim <- function(ngens, k, l, admix,
 
     summaries[[i]] <- cbind(
       scenario = i,
-      summarise_runs(res$p0, res$pF, expected)
+      summarise_runs(res$p0, res$pF, expected),
+      data.frame(
+        mc_precision = reached$half_width,
+        mc_precision_props = reached$half_width_props,
+        mc_precision_quantiles = reached$half_width_quantiles,
+        quantiles_at_atom = reached$at_atom,
+        converged = reached$half_width <= precision
+      )
     )
 
     if (keep_sims) {
