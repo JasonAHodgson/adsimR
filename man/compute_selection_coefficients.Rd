@@ -4,7 +4,12 @@
 \alias{compute_selection_coefficients}
 \title{Compute selection coefficients from allele frequency scenarios}
 \usage{
-compute_selection_coefficients(infile, outfile, recessive = FALSE)
+compute_selection_coefficients(
+  infile,
+  outfile = NULL,
+  recessive = FALSE,
+  s_max = 1
+)
 }
 \arguments{
 \item{infile}{Either a data frame or path to input file, containing the
@@ -56,9 +61,6 @@ matches \code{qx} to two decimal places. The recessive case reproduces the
 original \code{s_co.pl} Perl implementation in \code{data-raw/perl_base_code}.
 }
 \examples{
-result <-
-      compute_selection_coefficients(infile = system.file("extdata",
-                                                          "Selection_scenarios.txt",
-                                                           package = "adsimR"),
-                                   outfile = paste0(tempdir(), "/output.txt"))
+result <- compute_selection_coefficients(infile = system.file("perl_base_code/Selection_scenarios.txt", package = "adsimR"),
+outfile = paste0(tempdir(), "/output.txt"))
 }

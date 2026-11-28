@@ -42,23 +42,36 @@ test_that("migration moves the allele frequency toward the source", {
                     m1 = 0, m2 = 0.1, ne = 200, p1 = 0, p2 = 1, nsims = 200)
 
   # Binomial sampling is unbiased and the migration step is linear in p, so the
-  # mean final frequency tracks the deterministic continent-island recursion.
-  # The generation loop runs ngens - 1 times.
+  # mean final frequency tracks the deterministic continent-island recursion,
+  # applied once per simulated generation.
   expected <- 0
-  for (i in seq_len(19)) expected <- (0.9 * expected) + (0.1 * 1)
+  for (i in seq_len(20)) expected <- (0.9 * expected) + (0.1 * 1)
   expect_equal(mean(with_mig$pF), expected, tolerance = 0.03)
 })
 
 test_that("migration rates outside the unit interval are rejected", {
+  # adsim skips combinations it cannot simulate and only fails when none
+  # remain, so a single impossible combination is an error.
   expect_error(
     adsim(ngens = 5, k = 1, l = 1, admix = 0.5, m1 = 0.6, m2 = 0.6,
           ne = 50, p1 = 0.5, p2 = 0.5, nsims = 1),
-    "m1 \\+ m2 must not exceed 1"
+    "No valid combinations"
   )
   expect_error(
     adsim(ngens = 5, k = 1, l = 1, admix = 0.5, m1 = 1.5, m2 = 0,
-          ne = 50, p1 = 0.5, p2 = 0.5, nsims = 1)
+          ne = 50, p1 = 0.5, p2 = 0.5, nsims = 1),
+    "No valid combinations"
   )
+
+  # When only some combinations are impossible the rest still run.
+  expect_warning(
+    kept <- suppressMessages(
+      adsim(ngens = 5, k = 1, l = 1, admix = 0.5, m1 = c(0.1, 0.6),
+            m2 = 0.6, ne = 50, p1 = 0.5, p2 = 0.5, nsims = 10)
+    ),
+    "combination\\(s\\) skipped"
+  )
+  expect_equal(unique(kept$m1), 0.1)
 })
 
 # TODO make parameter checks have expected error and warning messages
