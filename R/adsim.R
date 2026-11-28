@@ -37,6 +37,15 @@
 #'   `nsims = "auto"`. Reaching it stops the scenario with `converged = FALSE`
 #'   in the summary rather than running without limit.
 #' @param conf Confidence level for the Monte Carlo intervals.
+#' @param tail_p Smallest p-value the runs should be able to resolve when
+#'   `nsims = "auto"`. Resolving a tail probability costs runs in proportion to
+#'   1 / `tail_p`, so the default of 0.001 asks for enough depth to support a
+#'   test at that level. The requirement is capped by what the null can
+#'   deliver: once a proportion of runs is fixed, no upper-tail p-value below
+#'   that proportion exists, and further runs are not spent chasing it.
+#' @param tail_rse Relative standard error wanted for a tail probability of
+#'   `tail_p`. The default of 0.2 asks for that probability to within about a
+#'   fifth of itself.
 #' @param fixed_p0 Optional fixed starting allele frequency, used for every run
 #'   in place of forming generation 0 from the two parent populations.
 #' @param max_n Ceiling on the simulated census size, applied once population
@@ -73,7 +82,9 @@ adsim <- function(ngens, k, l, admix,
                   precision = 0.01,  # Target Monte Carlo half-width
                   min_nsims = 500,   # First batch when choosing nsims
                   max_nsims = 1e5,   # Ceiling when choosing nsims
-                  conf = 0.95) {     # Confidence level for that half-width
+                  conf = 0.95,       # Confidence level for that half-width
+                  tail_p = 0.001,    # Smallest p-value to resolve
+                  tail_rse = 0.2) {  # Relative error wanted at tail_p
   choose_nsims <- is.character(nsims) &&
     length(nsims) == 1L && identical(nsims, "auto")
   if (!choose_nsims) {
@@ -84,7 +95,9 @@ adsim <- function(ngens, k, l, admix,
     precision > 0, precision < 1,
     is.numeric(min_nsims), length(min_nsims) == 1L, min_nsims >= 2,
     is.numeric(max_nsims), length(max_nsims) == 1L, max_nsims >= min_nsims,
-    is.numeric(conf), length(conf) == 1L, conf > 0, conf < 1
+    is.numeric(conf), length(conf) == 1L, conf > 0, conf < 1,
+    is.numeric(tail_p), length(tail_p) == 1L, tail_p > 0, tail_p < 1,
+    is.numeric(tail_rse), length(tail_rse) == 1L, tail_rse > 0
   )
 
   # Make every combination of parameter values. When nsims is chosen
@@ -132,7 +145,8 @@ adsim <- function(ngens, k, l, admix,
     if (choose_nsims) {
       adaptive <- simulate_to_precision(
         sim_args, precision = precision, min_nsims = min_nsims,
-        max_nsims = max_nsims, conf = conf
+        max_nsims = max_nsims, conf = conf, tail_p = tail_p,
+        tail_rse = tail_rse
       )
       res <- data.frame(Sim = seq_along(adaptive$pF),
                         p0 = adaptive$p0, pF = adaptive$pF)
@@ -141,6 +155,10 @@ adsim <- function(ngens, k, l, admix,
     } else {
       res <- do.call(adsim_simulator, c(sim_args, list(nsims = pc$nsims)))
       reached <- run_precision(res$pF, precision = precision, conf = conf)
+      adaptive <- list(
+        tail_depth = tail_depth(res$pF, tail_p = tail_p, tail_rse = tail_rse)
+      )
+      adaptive$tails_resolved <- pc$nsims >= adaptive$tail_depth$required
     }
 
     expected <- adsim_moments(
@@ -169,7 +187,11 @@ adsim <- function(ngens, k, l, admix,
         mc_precision_props = reached$half_width_props,
         mc_precision_quantiles = reached$half_width_quantiles,
         quantiles_at_atom = reached$at_atom,
-        converged = reached$half_width <= precision
+        p_resolution = 1 / (pc$nsims + 1),
+        tail_target = adaptive$tail_depth$target,
+        tails_resolved = adaptive$tails_resolved,
+        converged = reached$half_width <= precision &&
+          adaptive$tails_resolved
       )
     )
 

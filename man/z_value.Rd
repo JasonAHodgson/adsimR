@@ -49,6 +49,18 @@ deviation of the final allele frequencies across all simulations.
 \description{
 This function calculate z-scores for observed vs expected allele frequencies.
 }
+\section{Superseded}{
+
+This function measures the observed frequency against a normal distribution
+with the simulated standard deviation. Final allele frequencies are not
+normal: they are routinely skewed and, once runs begin to fix or be lost,
+have atoms at 0 and 1. Drawing a tail probability from a normal fitted to
+such a distribution can be badly wrong in either direction. Use
+\code{\link[=adsim_pvalue]{adsim_pvalue()}}, which counts the simulated runs beyond the observed value
+and so needs no assumption about shape. This function also centres the
+comparison on \code{admix * p1 + (1 - admix) * p2}, which ignores migration.
+}
+
 \examples{
 test <- adsim(
   ngens = 10, k = 2, l = 5, admix = c(0.2, 0.5),

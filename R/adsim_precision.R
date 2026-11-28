@@ -98,6 +98,43 @@ run_precision <- function(pF, precision = 0.01, conf = 0.95) {
   )
 }
 
+#' How many runs are needed to resolve the tails?
+#'
+#' @param pF Numeric vector of final allele frequencies.
+#' @param tail_p Smallest p-value the runs should be able to resolve.
+#' @param tail_rse Relative standard error wanted at `tail_p`.
+#' @return A list with the number of runs required and the tail probability
+#'   that requirement was set for.
+#' @details Estimating a tail probability \eqn{\alpha} from `n` runs gives it a
+#'   relative standard error of \eqn{\sqrt{(1 - \alpha) / (n\alpha)}}, so
+#'   resolving \eqn{\alpha} to a relative error `tail_rse` needs
+#'   \eqn{n = (1 - \alpha) / (\alpha \cdot \mathrm{tail\_rse}^2)} runs. Small
+#'   p-values are therefore expensive: the depth needed grows as
+#'   \eqn{1 / \alpha}.
+#'
+#'   The requirement is capped by what the null can actually deliver. An
+#'   observed frequency cannot exceed 1, so if a proportion of runs is already
+#'   fixed the smallest upper-tail p-value obtainable is that proportion, and
+#'   no number of further runs will go below it; the same holds at 0 for loss.
+#'   When both boundaries carry atoms the target is raised to the smaller of
+#'   them, which keeps an absorbed scenario from being sampled far past the
+#'   point where the answer can change.
+#' @keywords internal
+#' @noRd
+tail_depth <- function(pF, tail_p = 0.001, tail_rse = 0.2) {
+  mass_lost <- mean(pF <= 0)
+  mass_fixed <- mean(pF >= 1)
+
+  floor_lower <- if (mass_lost > 0) mass_lost else tail_p
+  floor_upper <- if (mass_fixed > 0) mass_fixed else tail_p
+  target <- max(tail_p, min(floor_lower, floor_upper))
+
+  list(
+    required = ceiling((1 - target) / (target * (tail_rse^2))),
+    target = target
+  )
+}
+
 #' Simulate until the distribution is resolved to a target precision
 #'
 #' @param params Named list of simulator arguments, without `nsims`.
@@ -113,7 +150,8 @@ run_precision <- function(pF, precision = 0.01, conf = 0.95) {
 #' @keywords internal
 #' @noRd
 simulate_to_precision <- function(params, precision = 0.01, min_nsims = 500L,
-                                  max_nsims = 100000L, conf = 0.95) {
+                                  max_nsims = 100000L, conf = 0.95,
+                                  tail_p = 0.001, tail_rse = 0.2) {
   p0 <- numeric(0)
   pF <- numeric(0)
   batch_size <- min(min_nsims, max_nsims)
@@ -125,10 +163,20 @@ simulate_to_precision <- function(params, precision = 0.01, min_nsims = 500L,
     done <- length(pF)
 
     reached <- run_precision(pF, precision = precision, conf = conf)
-    if (reached$half_width <= precision || done >= max_nsims) break
+    depth <- tail_depth(pF, tail_p = tail_p, tail_rse = tail_rse)
+
+    shape_resolved <- reached$half_width <= precision
+    tails_resolved <- done >= depth$required
+    if ((shape_resolved && tails_resolved) || done >= max_nsims) break
 
     # half-widths scale as 1 / sqrt(n), so aim straight at the required total
-    required <- ceiling(done * ((reached$half_width / precision)^2))
+    needed_for_shape <- if (shape_resolved) {
+      done
+    } else {
+      ceiling(done * ((reached$half_width / precision)^2))
+    }
+    required <- max(needed_for_shape, depth$required)
+
     # Grow by at least a tenth so that progress is always made, but no more
     # than that beyond what the estimate asks for, or a scenario that is only
     # just short of the target overshoots it badly.
@@ -137,5 +185,6 @@ simulate_to_precision <- function(params, precision = 0.01, min_nsims = 500L,
     batch_size <- max(batch_size, 1L)
   }
 
-  list(p0 = p0, pF = pF, precision_reached = reached)
+  list(p0 = p0, pF = pF, precision_reached = reached, tail_depth = depth,
+       tails_resolved = length(pF) >= depth$required)
 }

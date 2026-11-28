@@ -36,6 +36,15 @@
 #'   the final allele frequencies across all simulations.
 #'   - p: p-value calculated as 2*(1 - pnorm(abs(z))), where z is the z-score
 #'   described in the documentation for [z_value()].
+#' @section Superseded:
+#' This function measures the observed frequency against a normal distribution
+#' with the simulated standard deviation. Final allele frequencies are not
+#' normal: they are routinely skewed and, once runs begin to fix or be lost,
+#' have atoms at 0 and 1. Drawing a tail probability from a normal fitted to
+#' such a distribution can be badly wrong in either direction. Use
+#' [adsim_pvalue()], which counts the simulated runs beyond the observed value
+#' and so needs no assumption about shape. This function also centres the
+#' comparison on `admix * p1 + (1 - admix) * p2`, which ignores migration.
 #' @export
 #' @examples
 #' test <- adsim(ngens = 10, k = 2, l = 5, admix = c(0.2, 0.5),

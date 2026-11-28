@@ -33,6 +33,15 @@
 #'     where exp_freq is based on the admixture proportion and the initial
 #'     allele frequencies of the two populations, and sd_pF is the standard
 #'     deviation of the final allele frequencies across all simulations.
+#' @section Superseded:
+#' This function measures the observed frequency against a normal distribution
+#' with the simulated standard deviation. Final allele frequencies are not
+#' normal: they are routinely skewed and, once runs begin to fix or be lost,
+#' have atoms at 0 and 1. Drawing a tail probability from a normal fitted to
+#' such a distribution can be badly wrong in either direction. Use
+#' [adsim_pvalue()], which counts the simulated runs beyond the observed value
+#' and so needs no assumption about shape. This function also centres the
+#' comparison on `admix * p1 + (1 - admix) * p2`, which ignores migration.
 #' @export
 #' @examples
 #' test <- adsim(

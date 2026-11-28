@@ -21,7 +21,9 @@ adsim(
   precision = 0.01,
   min_nsims = 500,
   max_nsims = 1e+05,
-  conf = 0.95
+  conf = 0.95,
+  tail_p = 0.001,
+  tail_rse = 0.2
 )
 }
 \arguments{
@@ -79,6 +81,17 @@ about one percentage point.}
 in the summary rather than running without limit.}
 
 \item{conf}{Confidence level for the Monte Carlo intervals.}
+
+\item{tail_p}{Smallest p-value the runs should be able to resolve when
+\code{nsims = "auto"}. Resolving a tail probability costs runs in proportion to
+1 / \code{tail_p}, so the default of 0.001 asks for enough depth to support a
+test at that level. The requirement is capped by what the null can
+deliver: once a proportion of runs is fixed, no upper-tail p-value below
+that proportion exists, and further runs are not spent chasing it.}
+
+\item{tail_rse}{Relative standard error wanted for a tail probability of
+\code{tail_p}. The default of 0.2 asks for that probability to within about a
+fifth of itself.}
 }
 \value{
 An \link{adsim_result}: the conditions of each scenario, the individual
