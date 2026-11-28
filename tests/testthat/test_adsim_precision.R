@@ -21,11 +21,9 @@ test_that("auto reaches the precision it was asked for", {
 })
 
 test_that("a tighter precision demands more runs", {
-  # tail_p is relaxed so that the shape criterion, not the tail depth, is what
-  # decides the number of runs here.
   params <- list(ngens = 33, k = 1.1, l = 5, admix = 0.5, m1 = 0, m2 = 0,
                  ne = 200, p1 = 0.5, p2 = 0.9, nsims = "auto",
-                 tail_p = 0.2, keep_sims = FALSE)
+                 keep_sims = FALSE)
   loose <- suppressMessages(do.call(adsim, c(params, list(precision = 0.05))))
   tight <- suppressMessages(do.call(adsim, c(params, list(precision = 0.01))))
   expect_gt(tight$conditions$nsims, loose$conditions$nsims)
@@ -35,15 +33,13 @@ test_that("a tighter precision demands more runs", {
 test_that("each scenario gets the number of runs it needs", {
   # A distribution concentrated by migration in a large population is resolved
   # by far fewer runs than one spread across the whole interval.
-  # With the tail depth relaxed, the shape of the distribution decides.
   easy <- suppressMessages(
     adsim(ngens = 20, k = 1, l = 20, admix = 0.5, m1 = 0.05, m2 = 0.05,
-          ne = 5000, p1 = 0.5, p2 = 0.5, nsims = "auto", tail_p = 0.2,
-          keep_sims = FALSE)
+          ne = 5000, p1 = 0.5, p2 = 0.5, nsims = "auto", keep_sims = FALSE)
   )
   hard <- suppressMessages(
     adsim(ngens = 33, k = 1.1, l = 5, admix = 0.5, m1 = 0, m2 = 0, ne = 200,
-          p1 = 0.5, p2 = 0.9, nsims = "auto", tail_p = 0.2, keep_sims = FALSE)
+          p1 = 0.5, p2 = 0.9, nsims = "auto", keep_sims = FALSE)
   )
   expect_lt(easy$conditions$nsims, hard$conditions$nsims)
 })
@@ -93,74 +89,82 @@ test_that("an absorbed scenario converges on its proportions", {
   expect_lte(res$summary$mc_precision_props, 0.02)
 })
 
-test_that("resolving the tails is what decides nsims by default", {
-  # Shape alone would settle these in a few hundred runs; supporting a test at
-  # tail_p needs far more, and that is the binding requirement.
-  easy <- suppressMessages(
-    adsim(ngens = 20, k = 1, l = 20, admix = 0.5, m1 = 0.05, m2 = 0.05,
-          ne = 5000, p1 = 0.5, p2 = 0.5, nsims = "auto", max_nsims = 2e5,
-          keep_sims = FALSE)
-  )
-  shape_only <- suppressMessages(
-    adsim(ngens = 20, k = 1, l = 20, admix = 0.5, m1 = 0.05, m2 = 0.05,
-          ne = 5000, p1 = 0.5, p2 = 0.5, nsims = "auto", tail_p = 0.2,
-          keep_sims = FALSE)
-  )
-  expect_gt(easy$conditions$nsims, 20 * shape_only$conditions$nsims)
-  expect_equal(easy$conditions$nsims, tail_depth(0.5, 0.001, 0.2)$required,
-               tolerance = 0.2)
-  expect_true(easy$summary$tails_resolved)
+test_that("depth is set by where the observation falls, not by the scenario", {
+  # The cost of resolving a tail probability depends on that probability alone,
+  # so two very different nulls need the same depth for an observation at the
+  # same percentile, and the same null needs very different depths for
+  # observations at different percentiles.
+  broad <- adsim_simulator(ngens = 33, k = 1.1, l = 5, admix = 0.5, m1 = 0,
+                           m2 = 0, ne = 200, p1 = 0.5, p2 = 0.9,
+                           nsims = 20000)$pF
+  tight <- adsim_simulator(ngens = 20, k = 1, l = 20, admix = 0.5, m1 = 0.05,
+                           m2 = 0.05, ne = 5000, p1 = 0.5, p2 = 0.5,
+                           nsims = 20000)$pF
+
+  at_decile <- function(x) {
+    tail_depth(x, observed = stats::quantile(x, 0.9, names = FALSE))$required
+  }
+  expect_equal(at_decile(broad), at_decile(tight), tolerance = 0.1)
+  expect_lt(at_decile(broad), 400)
+
+  deep <- tail_depth(broad, observed = stats::quantile(broad, 0.999,
+                                                       names = FALSE))
+  expect_gt(deep$required, 50 * at_decile(broad))
 })
 
-test_that("tail depth follows 1 / tail_p when no atom bounds it", {
-  spread <- seq(0.2, 0.8, length.out = 1000)   # no runs at 0 or 1
-  shallow <- tail_depth(spread, tail_p = 0.01, tail_rse = 0.2)
-  deep <- tail_depth(spread, tail_p = 0.001, tail_rse = 0.2)
-  expect_equal(shallow$target, 0.01)
-  expect_equal(deep$target, 0.001)
-  # cost grows as 1 / tail_p
-  expect_equal(deep$required / shallow$required, 10, tolerance = 0.02)
-  expect_equal(deep$required, ceiling(0.999 / (0.001 * 0.04)))
+test_that("no observation means no tail requirement", {
+  spread <- seq(0.2, 0.8, length.out = 1000)
+  none <- tail_depth(spread, observed = NULL)
+  expect_equal(none$required, 0L)
+  expect_true(is.na(none$target))
 })
 
-test_that("an atom at a boundary caps the depth demanded", {
-  # Half the runs lost and half fixed: no upper-tail p-value below about a
-  # half exists, so asking for 0.001 cannot be met and must not be chased.
+test_that("tail_p caps the cost of an extreme observation", {
+  spread <- seq(0.2, 0.8, length.out = 1000)
+  far <- tail_depth(spread, observed = 1, tail_p = 0.001, tail_rse = 0.2)
+  expect_equal(far$target, 0.001)
+  expect_equal(far$required, ceiling(0.999 / (0.001 * 0.04)))
+  # a looser cap costs proportionally less
+  loose <- tail_depth(spread, observed = 1, tail_p = 0.01, tail_rse = 0.2)
+  expect_equal(loose$required, ceiling(0.99 / (0.01 * 0.04)))
+})
+
+test_that("an observation on an atom needs almost no depth", {
+  # Half the runs fixed: an observation of 1 has a tail of about a half, which
+  # is already the smallest p-value available in that direction.
   split <- c(rep(0, 500), rep(1, 500))
-  capped <- tail_depth(split, tail_p = 0.001, tail_rse = 0.2)
-  expect_equal(capped$target, 0.5)
-  expect_lt(capped$required, 100)
-
-  # an atom on one side only still leaves the other tail to resolve
-  one_side <- c(rep(0, 500), seq(0.1, 0.9, length.out = 500))
-  single <- tail_depth(one_side, tail_p = 0.001, tail_rse = 0.2)
-  expect_equal(single$target, 0.001)
+  on_atom <- tail_depth(split, observed = 1, tail_p = 0.001)
+  expect_gt(on_atom$target, 0.4)
+  expect_lt(on_atom$required, 100)
 })
 
-test_that("auto samples deep enough to support a tail test", {
+test_that("auto samples deep enough for the observation it is given", {
   res <- suppressMessages(
     adsim(ngens = 30, k = 1, l = 30, admix = 0.5, m1 = 0, m2 = 0, ne = 300,
-          p1 = 0.5, p2 = 0.5, nsims = "auto", fixed_p0 = 0.5, tail_p = 0.01,
-          max_nsims = 2e5, keep_sims = FALSE)
+          p1 = 0.5, p2 = 0.5, nsims = "auto", fixed_p0 = 0.5,
+          observed = 0.56, tail_p = 0.001, max_nsims = 2e5, keep_sims = FALSE)
   )
   expect_true(res$summary$tails_resolved)
   expect_true(res$summary$converged)
-  expect_equal(res$summary$tail_target, 0.01)
-  expect_gte(res$conditions$nsims, ceiling(0.99 / (0.01 * 0.04)))
-  expect_lte(res$summary$p_resolution, 0.01)
+  expect_false(is.na(res$summary$tail_target))
+  # enough runs to pin the tail at that observation to about a fifth
+  expect_gte(res$conditions$nsims,
+             ceiling((1 - res$summary$tail_target) /
+                       (res$summary$tail_target * 0.04)) * 0.9)
 })
 
-test_that("an absorbed scenario is not sampled past what it can resolve", {
-  shallow <- suppressMessages(
-    adsim(ngens = 1500, k = 1, l = 1500, admix = 0.5, m1 = 0, m2 = 0, ne = 50,
-          p1 = 0.5, p2 = 0.5, nsims = "auto", precision = 0.02,
-          tail_p = 0.001, fixed_p0 = 0.5, max_nsims = 2e5, keep_sims = FALSE)
+test_that("without an observation the shape criterion decides", {
+  easy <- suppressMessages(
+    adsim(ngens = 20, k = 1, l = 20, admix = 0.5, m1 = 0.05, m2 = 0.05,
+          ne = 5000, p1 = 0.5, p2 = 0.5, nsims = "auto", keep_sims = FALSE)
   )
-  # both boundaries carry atoms, so the target rises far above tail_p and the
-  # run is not driven to the 250000 that 0.001 would otherwise demand
-  expect_gt(shallow$summary$tail_target, 0.1)
-  expect_lt(shallow$conditions$nsims, 50000)
-  expect_true(shallow$summary$converged)
+  hard <- suppressMessages(
+    adsim(ngens = 33, k = 1.1, l = 5, admix = 0.5, m1 = 0, m2 = 0, ne = 200,
+          p1 = 0.5, p2 = 0.9, nsims = "auto", keep_sims = FALSE)
+  )
+  expect_lt(easy$conditions$nsims, hard$conditions$nsims)
+  expect_true(is.na(easy$summary$tail_target))
+  expect_true(easy$summary$tails_resolved)
 })
 
 test_that("precision arguments are validated", {

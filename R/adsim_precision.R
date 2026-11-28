@@ -98,36 +98,47 @@ run_precision <- function(pF, precision = 0.01, conf = 0.95) {
   )
 }
 
-#' How many runs are needed to resolve the tails?
+#' How many runs are needed to resolve the tail at an observed frequency?
 #'
 #' @param pF Numeric vector of final allele frequencies.
-#' @param tail_p Smallest p-value the runs should be able to resolve.
-#' @param tail_rse Relative standard error wanted at `tail_p`.
+#' @param observed Observed allele frequency, or NULL for no requirement.
+#' @param tail_p Smallest tail probability worth paying to resolve.
+#' @param tail_rse Relative standard error wanted for the tail probability.
 #' @return A list with the number of runs required and the tail probability
-#'   that requirement was set for.
+#'   the requirement was set for, both zero and `NA` when `observed` is NULL.
 #' @details Estimating a tail probability \eqn{\alpha} from `n` runs gives it a
 #'   relative standard error of \eqn{\sqrt{(1 - \alpha) / (n\alpha)}}, so
-#'   resolving \eqn{\alpha} to a relative error `tail_rse` needs
-#'   \eqn{n = (1 - \alpha) / (\alpha \cdot \mathrm{tail\_rse}^2)} runs. Small
-#'   p-values are therefore expensive: the depth needed grows as
-#'   \eqn{1 / \alpha}.
+#'   resolving it to `tail_rse` needs
+#'   \eqn{n = (1 - \alpha) / (\alpha \cdot \mathrm{tail\_rse}^2)} runs. That
+#'   cost depends on \eqn{\alpha} alone and not at all on the distribution the
+#'   probability came from, which is why the depth has to be keyed to the
+#'   observation: it is where the observed frequency falls in the null, not
+#'   the shape of the null, that decides how many runs are worth running. An
+#'   observation at the ninth decile of its own null is settled by a couple of
+#'   hundred runs whatever the scenario, while one at the 99.9th percentile
+#'   needs tens of thousands.
 #'
-#'   The requirement is capped by what the null can actually deliver. An
-#'   observed frequency cannot exceed 1, so if a proportion of runs is already
-#'   fixed the smallest upper-tail p-value obtainable is that proportion, and
-#'   no number of further runs will go below it; the same holds at 0 for loss.
-#'   When both boundaries carry atoms the target is raised to the smaller of
-#'   them, which keeps an absorbed scenario from being sampled far past the
-#'   point where the answer can change.
+#'   The tail used is the smaller of the two, matching the two-sided default of
+#'   [adsim_pvalue()]. An atom needs no special handling here: an observation
+#'   at 1 when half the runs are fixed simply has an estimated tail of about a
+#'   half, which asks for almost no depth, correctly, because no smaller
+#'   p-value exists in that direction.
+#'
+#'   `tail_p` caps the cost rather than promising an accuracy. Depth grows as
+#'   \eqn{1 / \alpha}, so an observation far out in the tail could demand runs
+#'   without limit; the target is held at `tail_p` instead, and the p-value is
+#'   then reported with `p_resolution` so its precision is visible.
 #' @keywords internal
 #' @noRd
-tail_depth <- function(pF, tail_p = 0.001, tail_rse = 0.2) {
-  mass_lost <- mean(pF <= 0)
-  mass_fixed <- mean(pF >= 1)
+tail_depth <- function(pF, observed = NULL, tail_p = 0.001, tail_rse = 0.2) {
+  if (is.null(observed)) {
+    return(list(required = 0L, target = NA_real_))
+  }
 
-  floor_lower <- if (mass_lost > 0) mass_lost else tail_p
-  floor_upper <- if (mass_fixed > 0) mass_fixed else tail_p
-  target <- max(tail_p, min(floor_lower, floor_upper))
+  n <- length(pF)
+  count <- min(sum(pF >= observed), sum(pF <= observed))
+  alpha <- (count + 1) / (n + 1)
+  target <- max(alpha, tail_p)
 
   list(
     required = ceiling((1 - target) / (target * (tail_rse^2))),
@@ -151,7 +162,8 @@ tail_depth <- function(pF, tail_p = 0.001, tail_rse = 0.2) {
 #' @noRd
 simulate_to_precision <- function(params, precision = 0.01, min_nsims = 500L,
                                   max_nsims = 100000L, conf = 0.95,
-                                  tail_p = 0.001, tail_rse = 0.2) {
+                                  observed = NULL, tail_p = 0.001,
+                                  tail_rse = 0.2) {
   p0 <- numeric(0)
   pF <- numeric(0)
   batch_size <- min(min_nsims, max_nsims)
@@ -163,7 +175,8 @@ simulate_to_precision <- function(params, precision = 0.01, min_nsims = 500L,
     done <- length(pF)
 
     reached <- run_precision(pF, precision = precision, conf = conf)
-    depth <- tail_depth(pF, tail_p = tail_p, tail_rse = tail_rse)
+    depth <- tail_depth(pF, observed = observed, tail_p = tail_p,
+                        tail_rse = tail_rse)
 
     shape_resolved <- reached$half_width <= precision
     tails_resolved <- done >= depth$required

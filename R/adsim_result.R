@@ -149,10 +149,10 @@ as_run_frame <- function(x) {
 #'     median is 0 or 1 at random while `prop_lost` is stable.}
 #'   \item{p_resolution, tail_target, tails_resolved}{The smallest one-sided
 #'     p-value these runs could produce, 1 / (nsims + 1); the tail probability
-#'     the run depth was set for; and whether that depth was reached. Where the
-#'     null has an atom at a boundary, `tail_target` rises to that atom's mass,
-#'     since no smaller p-value in that tail exists however many runs are
-#'     added.}
+#'     the run depth was set for, which is `NA` when [adsim()] was given no
+#'     `observed` value; and whether that depth was reached. An observation
+#'     sitting on an atom needs almost no depth, since the atom's mass is
+#'     already the smallest p-value available in that direction.}
 #'   \item{mean_expected, sd_expected, sd_ratio}{The exact mean and standard
 #'     deviation from [adsim_moments()], and the ratio of simulated to expected
 #'     standard deviation. A ratio near 1 confirms the simulation behaved as

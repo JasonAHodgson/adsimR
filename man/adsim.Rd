@@ -22,6 +22,7 @@ adsim(
   min_nsims = 500,
   max_nsims = 1e+05,
   conf = 0.95,
+  observed = NULL,
   tail_p = 0.001,
   tail_rse = 0.2
 )
@@ -82,16 +83,25 @@ in the summary rather than running without limit.}
 
 \item{conf}{Confidence level for the Monte Carlo intervals.}
 
-\item{tail_p}{Smallest p-value the runs should be able to resolve when
-\code{nsims = "auto"}. Resolving a tail probability costs runs in proportion to
-1 / \code{tail_p}, so the default of 0.001 asks for enough depth to support a
-test at that level. The requirement is capped by what the null can
-deliver: once a proportion of runs is fixed, no upper-tail p-value below
-that proportion exists, and further runs are not spent chasing it.}
+\item{observed}{Observed allele frequency the simulations will be tested
+against, used when \code{nsims = "auto"} to decide how deep to sample. Supply
+it and each scenario is run until the tail at that value is resolved to
+\code{tail_rse}; leave it \code{NULL} and the number of runs is decided by the shape
+of the distribution alone. It is worth supplying, because how many runs a
+test needs depends on where the observation falls in the null and barely
+at all on the scenario: an observation at the ninth decile is settled by a
+couple of hundred runs, one at the 99.9th percentile needs tens of
+thousands. The same value then goes to \code{\link[=adsim_pvalue]{adsim_pvalue()}}.}
 
-\item{tail_rse}{Relative standard error wanted for a tail probability of
-\code{tail_p}. The default of 0.2 asks for that probability to within about a
-fifth of itself.}
+\item{tail_p}{Smallest tail probability worth paying to resolve, used only
+when \code{observed} is given. Depth grows as 1 / \code{tail_p}, so an observation
+far out in the tail would otherwise demand runs without limit; the target
+is held here instead. It caps the cost rather than promising an accuracy,
+and \code{p_resolution} in the summary reports what was actually achieved.}
+
+\item{tail_rse}{Relative standard error wanted for the tail probability at
+\code{observed}. The default of 0.2 asks for it to within about a fifth of
+itself.}
 }
 \value{
 An \link{adsim_result}: the conditions of each scenario, the individual
