@@ -89,6 +89,84 @@ test_that("an absorbed scenario converges on its proportions", {
   expect_lte(res$summary$mc_precision_props, 0.02)
 })
 
+test_that("depth is set by where the observation falls, not by the scenario", {
+  # The cost of resolving a tail probability depends on that probability alone,
+  # so two very different nulls need the same depth for an observation at the
+  # same percentile, and the same null needs very different depths for
+  # observations at different percentiles.
+  broad <- adsim_simulator(ngens = 33, k = 1.1, l = 5, admix = 0.5, m1 = 0,
+                           m2 = 0, ne = 200, p1 = 0.5, p2 = 0.9,
+                           nsims = 20000)$pF
+  tight <- adsim_simulator(ngens = 20, k = 1, l = 20, admix = 0.5, m1 = 0.05,
+                           m2 = 0.05, ne = 5000, p1 = 0.5, p2 = 0.5,
+                           nsims = 20000)$pF
+
+  at_decile <- function(x) {
+    tail_depth(x, observed = stats::quantile(x, 0.9, names = FALSE))$required
+  }
+  expect_equal(at_decile(broad), at_decile(tight), tolerance = 0.1)
+  expect_lt(at_decile(broad), 400)
+
+  deep <- tail_depth(broad, observed = stats::quantile(broad, 0.999,
+                                                       names = FALSE))
+  expect_gt(deep$required, 50 * at_decile(broad))
+})
+
+test_that("no observation means no tail requirement", {
+  spread <- seq(0.2, 0.8, length.out = 1000)
+  none <- tail_depth(spread, observed = NULL)
+  expect_equal(none$required, 0L)
+  expect_true(is.na(none$target))
+})
+
+test_that("tail_p caps the cost of an extreme observation", {
+  spread <- seq(0.2, 0.8, length.out = 1000)
+  far <- tail_depth(spread, observed = 1, tail_p = 0.001, tail_rse = 0.2)
+  expect_equal(far$target, 0.001)
+  expect_equal(far$required, ceiling(0.999 / (0.001 * 0.04)))
+  # a looser cap costs proportionally less
+  loose <- tail_depth(spread, observed = 1, tail_p = 0.01, tail_rse = 0.2)
+  expect_equal(loose$required, ceiling(0.99 / (0.01 * 0.04)))
+})
+
+test_that("an observation on an atom needs almost no depth", {
+  # Half the runs fixed: an observation of 1 has a tail of about a half, which
+  # is already the smallest p-value available in that direction.
+  split <- c(rep(0, 500), rep(1, 500))
+  on_atom <- tail_depth(split, observed = 1, tail_p = 0.001)
+  expect_gt(on_atom$target, 0.4)
+  expect_lt(on_atom$required, 100)
+})
+
+test_that("auto samples deep enough for the observation it is given", {
+  res <- suppressMessages(
+    adsim(ngens = 30, k = 1, l = 30, admix = 0.5, m1 = 0, m2 = 0, ne = 300,
+          p1 = 0.5, p2 = 0.5, nsims = "auto", fixed_p0 = 0.5,
+          observed = 0.56, tail_p = 0.001, max_nsims = 2e5, keep_sims = FALSE)
+  )
+  expect_true(res$summary$tails_resolved)
+  expect_true(res$summary$converged)
+  expect_false(is.na(res$summary$tail_target))
+  # enough runs to pin the tail at that observation to about a fifth
+  expect_gte(res$conditions$nsims,
+             ceiling((1 - res$summary$tail_target) /
+                       (res$summary$tail_target * 0.04)) * 0.9)
+})
+
+test_that("without an observation the shape criterion decides", {
+  easy <- suppressMessages(
+    adsim(ngens = 20, k = 1, l = 20, admix = 0.5, m1 = 0.05, m2 = 0.05,
+          ne = 5000, p1 = 0.5, p2 = 0.5, nsims = "auto", keep_sims = FALSE)
+  )
+  hard <- suppressMessages(
+    adsim(ngens = 33, k = 1.1, l = 5, admix = 0.5, m1 = 0, m2 = 0, ne = 200,
+          p1 = 0.5, p2 = 0.9, nsims = "auto", keep_sims = FALSE)
+  )
+  expect_lt(easy$conditions$nsims, hard$conditions$nsims)
+  expect_true(is.na(easy$summary$tail_target))
+  expect_true(easy$summary$tails_resolved)
+})
+
 test_that("precision arguments are validated", {
   base <- list(ngens = 10, k = 1, l = 10, admix = 0.5, m1 = 0, m2 = 0,
                ne = 100, p1 = 0.5, p2 = 0.5)
