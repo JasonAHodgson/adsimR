@@ -5,7 +5,8 @@ test_that("test output dimensions", {
   test <- adsim(ngens = 10, k = 2, l = 5, admix = admix_props,
                 m1 = 0.01, m2 = 0.01, ne = 100, p1 = 0.5,
                 p2 = 0.9, nsims = n_reps)
-  expect_equal(nrow(test), as.integer(length(admix_props)*n_reps))
+  expect_equal(nrow(test$sims), as.integer(length(admix_props)*n_reps))
+  expect_equal(nrow(test$conditions), length(admix_props))
 })
 
 
@@ -23,9 +24,10 @@ t_3 <- adsim_simulator(ngens = 10, k = 2, l = 5, admix = 0.6,
 
 adsim_simulator_output <- bind_rows(t_1, t_2, t_3)
 
-adsim_output <- adsim(ngens = 10, k = 2, l = 5, admix = c(0.2, 0.4, 0.6),
+adsim_output <- as.data.frame(adsim(ngens = 10, k = 2, l = 5,
+             admix = c(0.2, 0.4, 0.6),
              m1 = 0.01, m2 = 0.01, ne = 100, p1 = 0.5,
-             p2 = 0.9, nsims = n_reps)
+             p2 = 0.9, nsims = n_reps))
 expect_equal(adsim_output$admix, adsim_simulator_output$admix)
 })
 
@@ -34,12 +36,12 @@ test_that("migration moves the allele frequency toward the source", {
   # The allele is absent from the admixed population (admix = 1 with p1 = 0)
   # and fixed in the second parent population, so any copy observed at the end
   # must have arrived by migration.
-  no_mig <- adsim(ngens = 20, k = 1.05, l = 5, admix = 1,
-                  m1 = 0, m2 = 0, ne = 200, p1 = 0, p2 = 1, nsims = 200)
+  no_mig <- as.data.frame(adsim(ngens = 20, k = 1.05, l = 5, admix = 1,
+                  m1 = 0, m2 = 0, ne = 200, p1 = 0, p2 = 1, nsims = 200))
   expect_equal(mean(no_mig$pF), 0)
 
-  with_mig <- adsim(ngens = 20, k = 1.05, l = 5, admix = 1,
-                    m1 = 0, m2 = 0.1, ne = 200, p1 = 0, p2 = 1, nsims = 200)
+  with_mig <- as.data.frame(adsim(ngens = 20, k = 1.05, l = 5, admix = 1,
+                    m1 = 0, m2 = 0.1, ne = 200, p1 = 0, p2 = 1, nsims = 200))
 
   # Binomial sampling is unbiased and the migration step is linear in p, so the
   # mean final frequency tracks the deterministic continent-island recursion,
@@ -65,10 +67,10 @@ test_that("migration rates outside the unit interval are rejected", {
 
   # When only some combinations are impossible the rest still run.
   expect_warning(
-    kept <- suppressMessages(
+    kept <- suppressMessages(as.data.frame(
       adsim(ngens = 5, k = 1, l = 1, admix = 0.5, m1 = c(0.1, 0.6),
             m2 = 0.6, ne = 50, p1 = 0.5, p2 = 0.5, nsims = 10)
-    ),
+    )),
     "combination\\(s\\) skipped"
   )
   expect_equal(unique(kept$m1), 0.1)

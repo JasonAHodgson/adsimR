@@ -45,6 +45,7 @@
 #' sim_overview(test)
 
 sim_overview <- function(adsim_df){
+  adsim_df <- as_run_frame(adsim_df)
   sum_adsim_df <- adsim_df %>%
     dplyr::group_by(.data$ngens, .data$k, .data$l, .data$admix,
                     .data$m1, .data$m2, .data$ne, .data$p1,

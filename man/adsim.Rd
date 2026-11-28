@@ -16,7 +16,8 @@ adsim(
   p2,
   nsims,
   fixed_p0 = NULL,
-  max_n = Inf
+  max_n = Inf,
+  keep_sims = TRUE
 )
 }
 \arguments{
@@ -52,15 +53,19 @@ in place of forming generation 0 from the two parent populations.}
 growth begins. Defaults to \code{Inf}, so size follows \code{k} and \code{l} without an
 arbitrary limit. Set it to a finite whole number to cap growth, for
 instance at a carrying capacity.}
+
+\item{keep_sims}{Whether to store the individual runs. When \code{FALSE} each
+scenario is summarised and its runs discarded, so \code{nsims} can be raised
+without the memory cost of keeping every run. Summary statistics are
+unaffected; only \verb{$sims} and \code{\link[=as.data.frame]{as.data.frame()}} need the runs.}
 }
 \value{
-A data frame containing three columns:
-\itemize{
-\item Sim: a numeric index containing the simulation run
-\item p0: a numeric containing the starting allele following the first generation
-of admixture.
-\item pF: a numeric containing the final allele frequency of each simulation.
-}
+An \link{adsim_result}: the conditions of each scenario, the individual
+runs unless \code{keep_sims = FALSE}, and a summary for each scenario covering
+the mean, variance and quantiles of final allele frequency, the proportion
+of runs fixed and lost, heterozygosity, and the exact expectations from
+\code{\link[=adsim_moments]{adsim_moments()}}. Use \code{\link[=as.data.frame]{as.data.frame()}} for the flat one-row-per-run
+format.
 }
 \description{
 This function simulates evolution of an allele through genetic drift in an
