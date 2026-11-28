@@ -7,6 +7,7 @@ test_that("sim_overview summarises correctly",{
   p2 = 0.9, nsims = 10)
 
   overview_obj <- sim_overview(test)
+  test <- as.data.frame(test)
 
   # check the number of rows are equal to the number of unique
   # parameter combinations (length of admix_list * length of gens_list)

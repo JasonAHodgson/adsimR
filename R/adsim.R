@@ -30,11 +30,16 @@
 #'   growth begins. Defaults to `Inf`, so size follows `k` and `l` without an
 #'   arbitrary limit. Set it to a finite whole number to cap growth, for
 #'   instance at a carrying capacity.
-#' @return A data frame containing three columns:
-#' - Sim: a numeric index containing the simulation run
-#' - p0: a numeric containing the starting allele following the first generation
-#'   of admixture.
-#' - pF: a numeric containing the final allele frequency of each simulation.
+#' @param keep_sims Whether to store the individual runs. When `FALSE` each
+#'   scenario is summarised and its runs discarded, so `nsims` can be raised
+#'   without the memory cost of keeping every run. Summary statistics are
+#'   unaffected; only `$sims` and [as.data.frame()] need the runs.
+#' @return An [adsim_result]: the conditions of each scenario, the individual
+#'   runs unless `keep_sims = FALSE`, and a summary for each scenario covering
+#'   the mean, variance and quantiles of final allele frequency, the proportion
+#'   of runs fixed and lost, heterozygosity, and the exact expectations from
+#'   [adsim_moments()]. Use [as.data.frame()] for the flat one-row-per-run
+#'   format.
 #' @details Generation 0 is formed by sampling `admix * ne` individuals from
 #'   the first parent population and the remainder from the second. Each
 #'   subsequent generation is produced in two steps. Migration acts first on
@@ -50,7 +55,8 @@
 adsim <- function(ngens, k, l, admix,
                   m1, m2, ne, p1, p2, nsims,
                   fixed_p0 = NULL,   # Optional fixed starting frequency
-                  max_n = Inf) {     # Ceiling on simulated population size
+                  max_n = Inf,       # Ceiling on simulated population size
+                  keep_sims = TRUE) {  # Store the individual runs?
   # Make every combination of parameter values.
   param_combos <- expand.grid(
     ngens = ngens, k = k, l = l, admix = admix,
@@ -73,18 +79,54 @@ adsim <- function(ngens, k, l, admix,
           sum(param_combos$nsims), " simulations in total.")
 
   # Run the simulator once per scenario; it checks each value itself.
-  results_list <- lapply(seq_len(nrow(param_combos)), function(i) {
+  conditions <- vector("list", nrow(param_combos))
+  summaries <- vector("list", nrow(param_combos))
+  runs <- if (keep_sims) vector("list", nrow(param_combos)) else NULL
+
+  for (i in seq_len(nrow(param_combos))) {
     pc <- param_combos[i, ]
+
     res <- adsim_simulator(
       ngens = pc$ngens, k = pc$k, l = pc$l, admix = pc$admix,
       m1 = pc$m1, m2 = pc$m2, ne = pc$ne, p1 = pc$p1, p2 = pc$p2,
       nsims = pc$nsims, fixed_p0 = fixed_p0, max_n = max_n
     )
-    cbind(Scenario = i, res)
-  })
 
-  results <- do.call(rbind, results_list)
-  rownames(results) <- NULL
-  results
+    expected <- adsim_moments(
+      ngens = pc$ngens, k = pc$k, l = pc$l, admix = pc$admix,
+      m1 = pc$m1, m2 = pc$m2, ne = pc$ne, p1 = pc$p1, p2 = pc$p2,
+      fixed_p0 = fixed_p0, max_n = max_n
+    )
+
+    conditions[[i]] <- data.frame(
+      scenario = i,
+      ngens = pc$ngens, k = pc$k, l = pc$l, admix = pc$admix,
+      m1 = pc$m1, m2 = pc$m2, ne = pc$ne, p1 = pc$p1, p2 = pc$p2,
+      nsims = pc$nsims,
+      fixed_p0 = if (is.null(fixed_p0)) NA_real_ else fixed_p0,
+      max_n = max_n,
+      n_final = expected$n_final,
+      n_max = expected$n_max,
+      n_harmonic = expected$n_harmonic
+    )
+
+    summaries[[i]] <- cbind(
+      scenario = i,
+      summarise_runs(res$p0, res$pF, expected)
+    )
+
+    if (keep_sims) {
+      runs[[i]] <- data.frame(
+        scenario = i, sim = res$Sim, p0 = res$p0, pF = res$pF
+      )
+    }
+  }
+
+  new_adsim_result(
+    conditions = do.call(rbind, conditions),
+    sims = if (keep_sims) do.call(rbind, runs) else NULL,
+    summary = do.call(rbind, summaries),
+    call = match.call()
+  )
 }
 

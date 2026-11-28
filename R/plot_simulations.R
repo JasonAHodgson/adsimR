@@ -21,6 +21,7 @@
 #' plot_simulations(test)
 
 plot_simulations <- function(adsim_df){
+  adsim_df <- as_run_frame(adsim_df)
 
   # create a lollipop plot that shows mean and sd of final allele frequencies
   plot_lollipop <- function(adsim_df){
